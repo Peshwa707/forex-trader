@@ -1,13 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
-import { Bot, Play, Pause, TrendingUp, TrendingDown, Target, Activity, RefreshCw, Trash2, Download, Settings, Zap, X, DollarSign, Clock, Shield } from 'lucide-react'
+import { Bot, Play, Pause, TrendingUp, TrendingDown, Target, Activity, RefreshCw, Trash2, Download, Settings, Zap, X, DollarSign, Clock, Shield, Wifi, WifiOff } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts'
-import { generateAllSuggestions, getTradingPerformance, updatePredictionsWithPrices, suggestPositionSize } from '../services/autoTrader'
-import { getPredictionLogs, getSuggestedTrades, getAccuracyStats, clearAllLogs, exportLogs } from '../services/predictionLogger'
-import { fetchLiveRates } from '../services/forexApi'
-import {
-  getAutoSettings, saveAutoSettings, getActiveTrades, executeTrade,
-  updateAllTrades, closeTrade, closeAllTrades, getTradingStats, resetAccount
-} from '../services/tradeExecutor'
+import { botApi, tradesApi, settingsApi, statsApi, accountApi, pricesApi, isApiAvailable } from '../services/api'
+import { suggestPositionSize } from '../services/autoTrader'
 import './Bot.css'
 
 export default function BotPage() {
@@ -15,150 +10,185 @@ export default function BotPage() {
   const [suggestions, setSuggestions] = useState([])
   const [performance, setPerformance] = useState(null)
   const [logs, setLogs] = useState([])
-  const [activeTab, setActiveTab] = useState('trades')
+  const [activeTab, setActiveTab] = useState('active')
   const [loading, setLoading] = useState(false)
   const [lastUpdate, setLastUpdate] = useState(null)
   const intervalRef = useRef(null)
 
   // Auto-trading state
-  const [autoSettings, setAutoSettings] = useState(getAutoSettings())
+  const [autoSettings, setAutoSettings] = useState({})
   const [activeTrades, setActiveTrades] = useState([])
   const [tradingStats, setTradingStats] = useState(null)
   const [showSettings, setShowSettings] = useState(false)
   const [currentPrices, setCurrentPrices] = useState({})
+  const [apiConnected, setApiConnected] = useState(true)
 
   useEffect(() => {
-    loadData()
+    checkApiAndLoad()
+    // Auto-refresh every 30 seconds
+    intervalRef.current = setInterval(loadData, 30000)
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current)
     }
   }, [])
 
-  useEffect(() => {
-    if (isRunning) {
-      runBot()
-      intervalRef.current = setInterval(runBot, 60000) // Run every minute
-    } else {
-      if (intervalRef.current) clearInterval(intervalRef.current)
+  const checkApiAndLoad = async () => {
+    const connected = await isApiAvailable()
+    setApiConnected(connected)
+    if (connected) {
+      loadData()
+      loadBotStatus()
     }
+  }
 
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current)
+  const loadBotStatus = async () => {
+    try {
+      const status = await botApi.getStatus()
+      setIsRunning(status.enabled)
+      if (status.lastRun) {
+        setLastUpdate(new Date(status.lastRun))
+      }
+    } catch (error) {
+      console.error('Failed to load bot status:', error)
     }
-  }, [isRunning])
+  }
 
-  const loadData = () => {
-    setPerformance(getTradingPerformance())
-    setLogs(getPredictionLogs().slice(-50).reverse())
-    setSuggestions(getSuggestedTrades().slice(0, 10))
-    setActiveTrades(getActiveTrades())
-    setTradingStats(getTradingStats())
-    setAutoSettings(getAutoSettings())
+  const loadData = async () => {
+    try {
+      const [trades, stats, settings, predictions, prices] = await Promise.all([
+        tradesApi.getActive(),
+        statsApi.get(),
+        settingsApi.get(),
+        statsApi.getPredictions(50),
+        pricesApi.getLive()
+      ])
+
+      setActiveTrades(trades)
+      setTradingStats(stats)
+      setAutoSettings(settings)
+      setLogs(predictions)
+      setPerformance(stats)
+
+      // Build price map
+      const priceMap = {}
+      prices.forEach(p => { priceMap[p.pair] = p.rate })
+      setCurrentPrices(priceMap)
+
+      setLastUpdate(new Date())
+    } catch (error) {
+      console.error('Failed to load data:', error)
+      setApiConnected(false)
+    }
   }
 
   const runBot = async () => {
     setLoading(true)
-
-    // Update old predictions with current prices
-    const rates = await fetchLiveRates()
-    const priceMap = {}
-    rates.forEach(r => {
-      priceMap[r.pair] = r.rate
-    })
-    setCurrentPrices(priceMap)
-    updatePredictionsWithPrices(priceMap)
-
-    // Update active trades with current prices and check for exits
-    const tradeResults = updateAllTrades(priceMap)
-    if (tradeResults.closed.length > 0) {
-      console.log(`Auto-closed ${tradeResults.closed.length} trades`)
+    try {
+      // Trigger a bot cycle on the server
+      await botApi.runCycle()
+      await loadData()
+    } catch (error) {
+      console.error('Failed to run bot cycle:', error)
+    } finally {
+      setLoading(false)
     }
+  }
 
-    // Generate new suggestions
-    const newSuggestions = await generateAllSuggestions()
-
-    // Auto-execute trades if enabled
-    const settings = getAutoSettings()
-    if (settings.enabled && newSuggestions.length > 0) {
-      newSuggestions.forEach(suggestion => {
-        if (suggestion.confidence >= settings.minConfidence) {
-          const result = executeTrade(suggestion, settings)
-          if (result.success) {
-            console.log(`Auto-executed trade: ${suggestion.pair} ${suggestion.signal}`)
-          }
-        }
-      })
+  const toggleBot = async () => {
+    try {
+      if (isRunning) {
+        await botApi.stop()
+        setIsRunning(false)
+      } else {
+        await botApi.start()
+        setIsRunning(true)
+        // Run immediately
+        runBot()
+      }
+    } catch (error) {
+      console.error('Failed to toggle bot:', error)
     }
-
-    loadData()
-    setLastUpdate(new Date())
-    setLoading(false)
   }
 
   const handleClearLogs = () => {
-    if (confirm('Clear all prediction logs? This cannot be undone.')) {
-      clearAllLogs()
-      loadData()
-    }
+    // Note: Server-side doesn't have clear logs endpoint yet
+    alert('Logs are stored on the server. Use export to download.')
   }
 
-  const handleExport = () => {
-    const data = exportLogs()
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `forex-bot-logs-${new Date().toISOString().split('T')[0]}.json`
-    a.click()
+  const handleExport = async () => {
+    try {
+      const data = await accountApi.export()
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `forex-bot-export-${new Date().toISOString().split('T')[0]}.json`
+      a.click()
+    } catch (error) {
+      console.error('Export failed:', error)
+    }
   }
 
   // Trade execution handlers
-  const handleExecuteTrade = (suggestion) => {
-    const result = executeTrade(suggestion, autoSettings)
-    if (result.success) {
-      loadData()
-    } else {
-      alert(`Cannot execute trade: ${result.reason}`)
+  const handleExecuteTrade = async (suggestion) => {
+    // Server handles execution automatically via bot cycle
+    alert('Trades are executed automatically by the server based on ML predictions')
+  }
+
+  const handleCloseTrade = async (tradeId) => {
+    try {
+      await tradesApi.close(tradeId)
+      await loadData()
+    } catch (error) {
+      alert(`Failed to close trade: ${error.message}`)
     }
   }
 
-  const handleCloseTrade = (tradeId) => {
-    const trade = activeTrades.find(t => t.id === tradeId)
-    if (trade && currentPrices[trade.pair]) {
-      closeTrade(tradeId, currentPrices[trade.pair], 'MANUAL')
-      loadData()
-    }
-  }
-
-  const handleCloseAllTrades = () => {
+  const handleCloseAllTrades = async () => {
     if (confirm('Close all active trades?')) {
-      closeAllTrades(currentPrices)
-      loadData()
+      try {
+        await tradesApi.closeAll()
+        await loadData()
+      } catch (error) {
+        alert(`Failed to close trades: ${error.message}`)
+      }
     }
   }
 
-  const handleToggleAutoTrading = () => {
-    const newSettings = { ...autoSettings, enabled: !autoSettings.enabled }
-    saveAutoSettings(newSettings)
-    setAutoSettings(newSettings)
+  const handleToggleAutoTrading = async () => {
+    try {
+      const newSettings = { ...autoSettings, enabled: !autoSettings.enabled }
+      await settingsApi.update(newSettings)
+      setAutoSettings(newSettings)
+    } catch (error) {
+      console.error('Failed to toggle auto trading:', error)
+    }
   }
 
-  const handleUpdateSettings = (key, value) => {
-    const newSettings = { ...autoSettings, [key]: value }
-    saveAutoSettings(newSettings)
-    setAutoSettings(newSettings)
+  const handleUpdateSettings = async (key, value) => {
+    try {
+      const newSettings = { ...autoSettings, [key]: value }
+      await settingsApi.update(newSettings)
+      setAutoSettings(newSettings)
+    } catch (error) {
+      console.error('Failed to update settings:', error)
+    }
   }
 
-  const handleResetAccount = () => {
+  const handleResetAccount = async () => {
     if (confirm('Reset account to $10,000? This will close all trades and clear history.')) {
-      resetAccount(10000)
-      loadData()
+      try {
+        await accountApi.reset(10000)
+        await loadData()
+      } catch (error) {
+        alert(`Failed to reset account: ${error.message}`)
+      }
     }
   }
 
-  // Prepare accuracy chart data
+  // Prepare accuracy chart data from logs
   const accuracyData = []
-  const logsForChart = getPredictionLogs().filter(l => l.outcome !== null)
+  const logsForChart = logs.filter(l => l.outcome !== null)
   let runningCorrect = 0
   let runningTotal = 0
 
@@ -168,7 +198,7 @@ export default function BotPage() {
     accuracyData.push({
       idx,
       accuracy: ((runningCorrect / runningTotal) * 100).toFixed(1),
-      pips: parseFloat(log.pnlPips || 0)
+      pips: parseFloat(log.pnl_pips || log.pnlPips || 0)
     })
   })
 
@@ -176,7 +206,7 @@ export default function BotPage() {
   const pnlData = []
   let cumPnl = 0
   logsForChart.slice(-100).forEach((log, idx) => {
-    cumPnl += parseFloat(log.pnlPips || 0)
+    cumPnl += parseFloat(log.pnl_pips || log.pnlPips || 0)
     pnlData.push({
       idx,
       pnl: cumPnl.toFixed(1)
@@ -194,12 +224,16 @@ export default function BotPage() {
           </div>
         </div>
         <div className="header-actions">
+          <div className={`connection-status ${apiConnected ? 'connected' : 'disconnected'}`}>
+            {apiConnected ? <Wifi size={16} /> : <WifiOff size={16} />}
+          </div>
           <button className="icon-btn" onClick={() => setShowSettings(true)}>
             <Settings size={20} />
           </button>
           <button
             className={`bot-toggle ${isRunning ? 'running' : ''}`}
-            onClick={() => setIsRunning(!isRunning)}
+            onClick={toggleBot}
+            disabled={!apiConnected}
           >
             {isRunning ? <Pause size={20} /> : <Play size={20} />}
             {isRunning ? 'Stop' : 'Start'}
@@ -592,8 +626,16 @@ function TradeCard({ trade, onExecute }) {
 }
 
 function ActiveTradeCard({ trade, onClose }) {
+  // Handle both camelCase and snake_case from database
   const pnl = parseFloat(trade.pnl || 0)
-  const pnlPips = parseFloat(trade.pnlPips || 0)
+  const pnlPips = parseFloat(trade.pnl_pips || trade.pnlPips || 0)
+  const entryPrice = trade.entry_price || trade.entryPrice
+  const currentPrice = trade.current_price || trade.currentPrice || entryPrice
+  const stopLoss = trade.stop_loss || trade.stopLoss
+  const takeProfit = trade.take_profit || trade.takeProfit
+  const trailingStop = trade.trailing_stop || trade.trailingStop
+  const positionSize = trade.position_size || trade.positionSize
+  const openedAt = trade.opened_at || trade.openedAt
 
   return (
     <div className={`active-trade-card card ${pnl >= 0 ? 'profit' : 'loss'}`}>
@@ -606,7 +648,7 @@ function ActiveTradeCard({ trade, onClose }) {
           </span>
         </div>
         <div className={`trade-pnl ${pnl >= 0 ? 'profit' : 'loss'}`}>
-          <span className="pnl-value">{pnl >= 0 ? '+' : ''}{pnl.toFixed(2)}</span>
+          <span className="pnl-value">{pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}</span>
           <span className="pnl-pips">{pnlPips >= 0 ? '+' : ''}{pnlPips.toFixed(1)} pips</span>
         </div>
       </div>
@@ -614,27 +656,27 @@ function ActiveTradeCard({ trade, onClose }) {
       <div className="active-trade-prices">
         <div className="price-item">
           <span className="price-label">Entry</span>
-          <span className="price-value">{trade.entryPrice}</span>
+          <span className="price-value">{entryPrice}</span>
         </div>
         <div className="price-item">
           <span className="price-label">Current</span>
-          <span className="price-value current">{trade.currentPrice}</span>
+          <span className="price-value current">{currentPrice}</span>
         </div>
         <div className="price-item">
           <span className="price-label">SL</span>
-          <span className="price-value loss">{trade.trailingStop || trade.stopLoss}</span>
+          <span className="price-value loss">{trailingStop || stopLoss}</span>
         </div>
         <div className="price-item">
           <span className="price-label">TP</span>
-          <span className="price-value profit">{trade.takeProfit}</span>
+          <span className="price-value profit">{takeProfit}</span>
         </div>
       </div>
 
       <div className="active-trade-footer">
-        <span className="trade-size">{trade.positionSize} lots</span>
+        <span className="trade-size">{positionSize} lots</span>
         <span className="trade-time">
           <Clock size={12} />
-          {new Date(trade.openedAt).toLocaleTimeString()}
+          {openedAt ? new Date(openedAt).toLocaleTimeString() : '-'}
         </span>
         <button className="btn btn-sm btn-outline" onClick={onClose}>
           <X size={14} />

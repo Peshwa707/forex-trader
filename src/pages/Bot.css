@@ -140,6 +140,23 @@
   border-color: var(--color-primary);
 }
 
+/* Connection Status */
+.connection-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  border-radius: var(--radius-md);
+}
+
+.connection-status.connected {
+  color: var(--color-profit);
+}
+
+.connection-status.disconnected {
+  color: var(--color-loss);
+}
+
 /* Status Bar */
 .status-bar {
   display: flex;
