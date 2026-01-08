@@ -1,0 +1,132 @@
+.learn-page .page-header {
+  text-align: center;
+  margin-bottom: var(--spacing-lg);
+}
+
+.section-tabs {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-lg);
+}
+
+.section-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.85rem;
+}
+
+.section-tab.active {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: rgba(88, 166, 255, 0.1);
+}
+
+.section-tab:hover {
+  border-color: var(--color-primary);
+}
+
+.education-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+}
+
+.education-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.card-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-md);
+  background: none;
+  border: none;
+  color: var(--color-text);
+  cursor: pointer;
+  text-align: left;
+}
+
+.card-header:hover {
+  background: var(--color-bg-secondary);
+}
+
+.card-title {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.card-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-md);
+  color: var(--color-primary);
+}
+
+.card-title h3 {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.card-content {
+  padding: var(--spacing-md);
+  padding-top: 0;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg-secondary);
+}
+
+.card-content pre {
+  font-family: inherit;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-size: 0.9rem;
+  line-height: 1.7;
+  color: var(--color-text-secondary);
+  margin: 0;
+  padding: var(--spacing-md);
+}
+
+/* Tips Section */
+.tips-section {
+  background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-bg-secondary) 100%);
+  border-left: 4px solid var(--color-primary);
+}
+
+.tips-section h3 {
+  font-size: 1rem;
+  margin-bottom: var(--spacing-md);
+  color: var(--color-primary);
+}
+
+.tips-list {
+  margin: 0;
+  padding-left: var(--spacing-lg);
+}
+
+.tips-list li {
+  margin-bottom: var(--spacing-sm);
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+}
+
+.tips-list li:last-child {
+  margin-bottom: 0;
+}

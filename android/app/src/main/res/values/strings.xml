@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Forex Trader</string>
+    <string name="title_activity_main">Forex Trader</string>
+    <string name="package_name">com.forextrader.app</string>
+    <string name="custom_url_scheme">com.forextrader.app</string>
+</resources>
