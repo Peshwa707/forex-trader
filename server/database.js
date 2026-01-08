@@ -1,9 +1,10 @@
 /**
  * SQLite Database for Forex Trading Bot
- * Persistent storage for 24/7 operation
+ * Using sql.js (pure JavaScript, no native compilation)
  */
 
-import Database from 'better-sqlite3'
+import initSqlJs from 'sql.js'
+import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
@@ -11,89 +12,167 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const dbPath = process.env.DATABASE_PATH || path.join(__dirname, '../data/forex.db')
 
 // Ensure data directory exists
-import fs from 'fs'
 const dataDir = path.dirname(dbPath)
 if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true })
 }
 
-const db = new Database(dbPath)
-db.pragma('journal_mode = WAL')
+let db = null
+let SQL = null
 
-// Initialize tables
-db.exec(`
-  -- Bot settings
-  CREATE TABLE IF NOT EXISTS settings (
-    key TEXT PRIMARY KEY,
-    value TEXT NOT NULL,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
+// Initialize database
+async function initDatabase() {
+  if (db) return db
 
-  -- Active trades
-  CREATE TABLE IF NOT EXISTS trades (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    pair TEXT NOT NULL,
-    direction TEXT NOT NULL,
-    signal TEXT NOT NULL,
-    entry_price REAL NOT NULL,
-    current_price REAL,
-    stop_loss REAL NOT NULL,
-    take_profit REAL NOT NULL,
-    trailing_stop REAL,
-    position_size REAL NOT NULL,
-    confidence INTEGER,
-    reasoning TEXT,
-    status TEXT DEFAULT 'OPEN',
-    pnl_pips REAL DEFAULT 0,
-    pnl REAL DEFAULT 0,
-    close_reason TEXT,
-    opened_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    closed_at DATETIME,
-    last_update DATETIME
-  );
+  SQL = await initSqlJs()
 
-  -- Prediction logs
-  CREATE TABLE IF NOT EXISTS predictions (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    pair TEXT NOT NULL,
-    direction TEXT NOT NULL,
-    signal TEXT NOT NULL,
-    confidence INTEGER,
-    entry_price REAL,
-    stop_loss REAL,
-    take_profit REAL,
-    reasoning TEXT,
-    outcome TEXT,
-    correct INTEGER,
-    pnl_pips REAL,
-    price_at_resolution REAL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    resolved_at DATETIME
-  );
+  // Load existing database or create new one
+  try {
+    if (fs.existsSync(dbPath)) {
+      const fileBuffer = fs.readFileSync(dbPath)
+      db = new SQL.Database(fileBuffer)
+      console.log('Loaded existing database')
+    } else {
+      db = new SQL.Database()
+      console.log('Created new database')
+    }
+  } catch (error) {
+    console.error('Error loading database, creating new one:', error.message)
+    db = new SQL.Database()
+  }
 
-  -- Price history for ML
-  CREATE TABLE IF NOT EXISTS price_history (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    pair TEXT NOT NULL,
-    price REAL NOT NULL,
-    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
+  // Initialize tables
+  db.run(`
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `)
 
-  -- Bot activity log
-  CREATE TABLE IF NOT EXISTS activity_log (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    type TEXT NOT NULL,
-    message TEXT,
-    data TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
+  db.run(`
+    CREATE TABLE IF NOT EXISTS trades (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      pair TEXT NOT NULL,
+      direction TEXT NOT NULL,
+      signal TEXT NOT NULL,
+      entry_price REAL NOT NULL,
+      current_price REAL,
+      stop_loss REAL NOT NULL,
+      take_profit REAL NOT NULL,
+      trailing_stop REAL,
+      position_size REAL NOT NULL,
+      confidence INTEGER,
+      reasoning TEXT,
+      status TEXT DEFAULT 'OPEN',
+      pnl_pips REAL DEFAULT 0,
+      pnl REAL DEFAULT 0,
+      close_reason TEXT,
+      opened_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      closed_at TEXT,
+      last_update TEXT
+    )
+  `)
 
-  -- Create indexes
-  CREATE INDEX IF NOT EXISTS idx_trades_status ON trades(status);
-  CREATE INDEX IF NOT EXISTS idx_trades_pair ON trades(pair);
-  CREATE INDEX IF NOT EXISTS idx_predictions_pair ON predictions(pair);
-  CREATE INDEX IF NOT EXISTS idx_price_history_pair ON price_history(pair, timestamp);
-`)
+  db.run(`
+    CREATE TABLE IF NOT EXISTS predictions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      pair TEXT NOT NULL,
+      direction TEXT NOT NULL,
+      signal TEXT NOT NULL,
+      confidence INTEGER,
+      entry_price REAL,
+      stop_loss REAL,
+      take_profit REAL,
+      reasoning TEXT,
+      outcome TEXT,
+      correct INTEGER,
+      pnl_pips REAL,
+      price_at_resolution REAL,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      resolved_at TEXT
+    )
+  `)
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS price_history (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      pair TEXT NOT NULL,
+      price REAL NOT NULL,
+      timestamp TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `)
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS activity_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      type TEXT NOT NULL,
+      message TEXT,
+      data TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `)
+
+  // Create indexes
+  db.run('CREATE INDEX IF NOT EXISTS idx_trades_status ON trades(status)')
+  db.run('CREATE INDEX IF NOT EXISTS idx_trades_pair ON trades(pair)')
+  db.run('CREATE INDEX IF NOT EXISTS idx_predictions_pair ON predictions(pair)')
+
+  saveDatabase()
+  return db
+}
+
+// Save database to file
+function saveDatabase() {
+  if (!db) return
+  try {
+    const data = db.export()
+    const buffer = Buffer.from(data)
+    fs.writeFileSync(dbPath, buffer)
+  } catch (error) {
+    console.error('Error saving database:', error.message)
+  }
+}
+
+// Auto-save every 30 seconds
+setInterval(saveDatabase, 30000)
+
+// Helper to run queries
+function query(sql, params = []) {
+  if (!db) throw new Error('Database not initialized')
+  return db.exec(sql, params)
+}
+
+function run(sql, params = []) {
+  if (!db) throw new Error('Database not initialized')
+  db.run(sql, params)
+  saveDatabase()
+}
+
+function getOne(sql, params = []) {
+  if (!db) throw new Error('Database not initialized')
+  const stmt = db.prepare(sql)
+  stmt.bind(params)
+  if (stmt.step()) {
+    const row = stmt.getAsObject()
+    stmt.free()
+    return row
+  }
+  stmt.free()
+  return null
+}
+
+function getAll(sql, params = []) {
+  if (!db) throw new Error('Database not initialized')
+  const stmt = db.prepare(sql)
+  stmt.bind(params)
+  const rows = []
+  while (stmt.step()) {
+    rows.push(stmt.getAsObject())
+  }
+  stmt.free()
+  return rows
+}
 
 // Default settings
 const DEFAULT_SETTINGS = {
@@ -105,15 +184,15 @@ const DEFAULT_SETTINGS = {
   maxDailyTrades: 10,
   maxDailyLoss: 5,
   allowedPairs: ['EUR/USD', 'GBP/USD', 'USD/JPY', 'AUD/USD', 'USD/CAD', 'EUR/GBP'],
-  tradingHours: { start: 0, end: 24 }, // 24/7 for server
+  tradingHours: { start: 0, end: 24 },
   useTrailingStop: true,
   trailingStopPips: 20,
-  updateIntervalMs: 60000 // 1 minute
+  updateIntervalMs: 60000
 }
 
 // Settings functions
 export function getSetting(key) {
-  const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(key)
+  const row = getOne('SELECT value FROM settings WHERE key = ?', [key])
   if (row) {
     try {
       return JSON.parse(row.value)
@@ -126,7 +205,7 @@ export function getSetting(key) {
 
 export function getAllSettings() {
   const settings = { ...DEFAULT_SETTINGS }
-  const rows = db.prepare('SELECT key, value FROM settings').all()
+  const rows = getAll('SELECT key, value FROM settings')
   rows.forEach(row => {
     try {
       settings[row.key] = JSON.parse(row.value)
@@ -138,51 +217,38 @@ export function getAllSettings() {
 }
 
 export function saveSetting(key, value) {
-  const stmt = db.prepare(`
-    INSERT INTO settings (key, value, updated_at)
-    VALUES (?, ?, CURRENT_TIMESTAMP)
-    ON CONFLICT(key) DO UPDATE SET value = ?, updated_at = CURRENT_TIMESTAMP
-  `)
   const val = typeof value === 'object' ? JSON.stringify(value) : String(value)
-  stmt.run(key, val, val)
+  run('INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES (?, ?, datetime("now"))', [key, val])
 }
 
 export function saveAllSettings(settings) {
-  const stmt = db.prepare(`
-    INSERT INTO settings (key, value, updated_at)
-    VALUES (?, ?, CURRENT_TIMESTAMP)
-    ON CONFLICT(key) DO UPDATE SET value = ?, updated_at = CURRENT_TIMESTAMP
-  `)
-  const transaction = db.transaction((settings) => {
-    for (const [key, value] of Object.entries(settings)) {
-      const val = typeof value === 'object' ? JSON.stringify(value) : String(value)
-      stmt.run(key, val, val)
-    }
-  })
-  transaction(settings)
+  for (const [key, value] of Object.entries(settings)) {
+    saveSetting(key, value)
+  }
 }
 
 // Trade functions
 export function getActiveTrades() {
-  return db.prepare('SELECT * FROM trades WHERE status = ? ORDER BY opened_at DESC').all('OPEN')
+  return getAll('SELECT * FROM trades WHERE status = ? ORDER BY opened_at DESC', ['OPEN'])
 }
 
 export function getTradeById(id) {
-  return db.prepare('SELECT * FROM trades WHERE id = ?').get(id)
+  return getOne('SELECT * FROM trades WHERE id = ?', [id])
 }
 
 export function createTrade(trade) {
-  const stmt = db.prepare(`
+  run(`
     INSERT INTO trades (pair, direction, signal, entry_price, current_price, stop_loss, take_profit,
                         trailing_stop, position_size, confidence, reasoning, status, opened_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'OPEN', CURRENT_TIMESTAMP)
-  `)
-  const result = stmt.run(
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'OPEN', datetime('now'))
+  `, [
     trade.pair, trade.direction, trade.signal, trade.entryPrice, trade.entryPrice,
     trade.stopLoss, trade.takeProfit, trade.trailingStop || trade.stopLoss,
     trade.positionSize, trade.confidence, trade.reasoning
-  )
-  return { ...trade, id: result.lastInsertRowid }
+  ])
+
+  const result = getOne('SELECT last_insert_rowid() as id')
+  return { ...trade, id: result.id }
 }
 
 export function updateTrade(id, updates) {
@@ -194,103 +260,103 @@ export function updateTrade(id, updates) {
     fields.push(`${dbKey} = ?`)
     values.push(value)
   }
-  fields.push('last_update = CURRENT_TIMESTAMP')
+  fields.push('last_update = datetime("now")')
   values.push(id)
 
-  db.prepare(`UPDATE trades SET ${fields.join(', ')} WHERE id = ?`).run(...values)
+  run(`UPDATE trades SET ${fields.join(', ')} WHERE id = ?`, values)
   return getTradeById(id)
 }
 
 export function closeTrade(id, exitPrice, reason, pnlPips, pnl) {
-  db.prepare(`
+  run(`
     UPDATE trades SET
       status = 'CLOSED',
       current_price = ?,
       close_reason = ?,
       pnl_pips = ?,
       pnl = ?,
-      closed_at = CURRENT_TIMESTAMP
+      closed_at = datetime('now')
     WHERE id = ?
-  `).run(exitPrice, reason, pnlPips, pnl, id)
+  `, [exitPrice, reason, pnlPips, pnl, id])
   return getTradeById(id)
 }
 
 export function getTradeHistory(limit = 100) {
-  return db.prepare('SELECT * FROM trades WHERE status = ? ORDER BY closed_at DESC LIMIT ?').all('CLOSED', limit)
+  return getAll('SELECT * FROM trades WHERE status = ? ORDER BY closed_at DESC LIMIT ?', ['CLOSED', limit])
 }
 
 export function getTodaysTrades() {
-  return db.prepare(`
+  return getAll(`
     SELECT * FROM trades
     WHERE date(opened_at) = date('now')
     ORDER BY opened_at DESC
-  `).all()
+  `)
 }
 
 // Prediction functions
 export function logPrediction(prediction) {
-  const stmt = db.prepare(`
+  run(`
     INSERT INTO predictions (pair, direction, signal, confidence, entry_price, stop_loss, take_profit, reasoning)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `)
-  const result = stmt.run(
+  `, [
     prediction.pair, prediction.direction, prediction.signal, prediction.confidence,
     prediction.entryPrice, prediction.stopLoss, prediction.takeProfit, prediction.reasoning
-  )
-  return result.lastInsertRowid
+  ])
+  const result = getOne('SELECT last_insert_rowid() as id')
+  return result.id
 }
 
 export function resolvePrediction(id, outcome, correct, pnlPips, priceAtResolution) {
-  db.prepare(`
+  run(`
     UPDATE predictions SET
       outcome = ?,
       correct = ?,
       pnl_pips = ?,
       price_at_resolution = ?,
-      resolved_at = CURRENT_TIMESTAMP
+      resolved_at = datetime('now')
     WHERE id = ?
-  `).run(outcome, correct ? 1 : 0, pnlPips, priceAtResolution, id)
+  `, [outcome, correct ? 1 : 0, pnlPips, priceAtResolution, id])
 }
 
 export function getPredictions(limit = 100) {
-  return db.prepare('SELECT * FROM predictions ORDER BY created_at DESC LIMIT ?').all(limit)
+  return getAll('SELECT * FROM predictions ORDER BY created_at DESC LIMIT ?', [limit])
 }
 
 export function getUnresolvedPredictions() {
-  return db.prepare('SELECT * FROM predictions WHERE outcome IS NULL ORDER BY created_at DESC').all()
+  return getAll('SELECT * FROM predictions WHERE outcome IS NULL ORDER BY created_at DESC')
 }
 
 // Price history functions
 export function savePriceHistory(pair, price) {
-  db.prepare('INSERT INTO price_history (pair, price) VALUES (?, ?)').run(pair, price)
+  run('INSERT INTO price_history (pair, price) VALUES (?, ?)', [pair, price])
 }
 
 export function getPriceHistory(pair, limit = 100) {
-  return db.prepare(`
+  return getAll(`
     SELECT price, timestamp FROM price_history
     WHERE pair = ?
     ORDER BY timestamp DESC
     LIMIT ?
-  `).all(pair, limit)
+  `, [pair, limit])
 }
 
 export function cleanOldPriceHistory(daysToKeep = 7) {
-  db.prepare(`
+  run(`
     DELETE FROM price_history
     WHERE timestamp < datetime('now', '-' || ? || ' days')
-  `).run(daysToKeep)
+  `, [daysToKeep])
 }
 
 // Activity log functions
 export function logActivity(type, message, data = null) {
-  db.prepare(`
+  run(`
     INSERT INTO activity_log (type, message, data)
     VALUES (?, ?, ?)
-  `).run(type, message, data ? JSON.stringify(data) : null)
+  `, [type, message, data ? JSON.stringify(data) : null])
 }
 
 export function getActivityLog(limit = 50) {
-  return db.prepare('SELECT * FROM activity_log ORDER BY created_at DESC LIMIT ?').all(limit)
+  return getAll('SELECT * FROM activity_log ORDER BY created_at DESC LIMIT ?', [limit])
 }
 
 // Statistics functions
@@ -349,5 +415,8 @@ export function getTradingStats() {
     todaysTrades: todaysTrades.length
   }
 }
+
+// Initialize on import
+await initDatabase()
 
 export default db
