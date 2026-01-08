@@ -1,5 +1,5 @@
 import { Outlet, NavLink } from 'react-router-dom'
-import { Home, TrendingUp, Brain, Bell, ClipboardList } from 'lucide-react'
+import { Home, TrendingUp, Brain, Bot, ClipboardList } from 'lucide-react'
 
 export default function Layout() {
   return (
@@ -21,9 +21,9 @@ export default function Layout() {
           <Brain size={20} />
           <span>AI</span>
         </NavLink>
-        <NavLink to="/signals" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-          <Bell size={20} />
-          <span>Alerts</span>
+        <NavLink to="/bot" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+          <Bot size={20} />
+          <span>Bot</span>
         </NavLink>
         <NavLink to="/journal" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
           <ClipboardList size={20} />
