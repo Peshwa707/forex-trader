@@ -217,3 +217,72 @@
   color: var(--color-text-muted);
   margin-left: auto;
 }
+
+/* AI Predictions Preview */
+.section-header h2 {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.predictions-preview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.prediction-mini {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  border-left: 3px solid var(--color-text-muted);
+}
+
+.prediction-mini.buy {
+  border-left-color: var(--color-profit);
+}
+
+.prediction-mini.sell {
+  border-left-color: var(--color-loss);
+}
+
+.prediction-mini.hold {
+  border-left-color: var(--color-warning);
+}
+
+.pred-pair {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.pred-signal {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.prediction-mini.buy .pred-signal {
+  color: var(--color-profit);
+}
+
+.prediction-mini.sell .pred-signal {
+  color: var(--color-loss);
+}
+
+.prediction-mini.hold .pred-signal {
+  color: var(--color-warning);
+}
+
+.pred-confidence {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  background: var(--color-bg);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+}

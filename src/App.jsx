@@ -5,6 +5,7 @@ import Prices from './pages/Prices'
 import Signals from './pages/Signals'
 import Journal from './pages/Journal'
 import Learn from './pages/Learn'
+import Analysis from './pages/Analysis'
 import './index.css'
 
 function App() {
@@ -14,6 +15,7 @@ function App() {
         <Route path="/" element={<Layout />}>
           <Route index element={<Home />} />
           <Route path="prices" element={<Prices />} />
+          <Route path="analysis" element={<Analysis />} />
           <Route path="signals" element={<Signals />} />
           <Route path="journal" element={<Journal />} />
           <Route path="learn" element={<Learn />} />

@@ -1,20 +1,36 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { TrendingUp, TrendingDown, Bell, ClipboardList, DollarSign, Activity } from 'lucide-react'
+import { TrendingUp, TrendingDown, Bell, ClipboardList, DollarSign, Activity, Brain, Minus } from 'lucide-react'
 import { fetchLiveRates, formatRate, CURRENCY_PAIRS } from '../services/forexApi'
+import { generateHistoricalData, predict } from '../services/mlPrediction'
 import './Home.css'
 
 export default function Home() {
   const [rates, setRates] = useState([])
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState({ totalTrades: 0, winRate: 0, totalPnL: 0 })
+  const [predictions, setPredictions] = useState([])
 
   useEffect(() => {
     loadRates()
     loadStats()
+    loadPredictions()
     const interval = setInterval(loadRates, 30000) // Refresh every 30 seconds
     return () => clearInterval(interval)
   }, [])
+
+  const loadPredictions = async () => {
+    const topPairs = ['EUR/USD', 'GBP/USD', 'USD/JPY']
+    const basePrices = { 'EUR/USD': 1.0850, 'GBP/USD': 1.2700, 'USD/JPY': 149.50 }
+
+    const preds = await Promise.all(topPairs.map(async (pair) => {
+      const history = generateHistoricalData(basePrices[pair], 90)
+      const prediction = await predict(history)
+      return { pair, ...prediction }
+    }))
+
+    setPredictions(preds)
+  }
 
   const loadRates = async () => {
     const data = await fetchLiveRates()
@@ -128,6 +144,28 @@ export default function Home() {
             <ClipboardList size={20} />
             <span>Log Trade</span>
           </Link>
+        </div>
+      </section>
+
+      {/* AI Predictions */}
+      <section className="section">
+        <div className="section-header">
+          <h2><Brain size={18} /> AI Predictions</h2>
+          <Link to="/analysis" className="view-all">Full Analysis</Link>
+        </div>
+        <div className="predictions-preview">
+          {predictions.map(pred => (
+            <div key={pred.pair} className={`prediction-mini ${pred.signal.toLowerCase()}`}>
+              <div className="pred-pair">{pred.pair}</div>
+              <div className="pred-signal">
+                {pred.direction === 'UP' && <TrendingUp size={16} />}
+                {pred.direction === 'DOWN' && <TrendingDown size={16} />}
+                {pred.direction === 'NEUTRAL' && <Minus size={16} />}
+                <span>{pred.signal}</span>
+              </div>
+              <div className="pred-confidence">{pred.confidence}%</div>
+            </div>
+          ))}
         </div>
       </section>
 
