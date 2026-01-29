@@ -1,0 +1,266 @@
+/**
+ * Shariah Status Widget Styles
+ * Islamic finance compliance indicator styling
+ */
+
+.shariah-widget {
+  background: var(--card-bg, #21262d);
+  border: 1px solid var(--border-color, #30363d);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  transition: all 0.3s ease;
+}
+
+/* Loading state */
+.shariah-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted, #8b949e);
+}
+
+.shariah-loading .spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Disabled state */
+.shariah-disabled {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  opacity: 0.8;
+}
+
+.shariah-disabled .shariah-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.shariah-disabled .shariah-icon {
+  color: var(--text-muted, #8b949e);
+}
+
+.shariah-disabled .shariah-label {
+  font-weight: 500;
+  color: var(--text-primary, #c9d1d9);
+}
+
+.shariah-disabled .shariah-status-text {
+  color: var(--text-muted, #8b949e);
+  font-size: 0.875rem;
+}
+
+/* Enabled state */
+.shariah-enabled {
+  border-color: #238636;
+  background: linear-gradient(135deg, rgba(35, 134, 54, 0.1), transparent);
+}
+
+.shariah-enabled.shariah-paused {
+  border-color: #d29922;
+  background: linear-gradient(135deg, rgba(210, 153, 34, 0.1), transparent);
+}
+
+/* Header */
+.shariah-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.shariah-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.shariah-icon {
+  color: #f0c040;
+}
+
+.shariah-badge {
+  background: #238636;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.shariah-paused .shariah-badge {
+  background: #d29922;
+}
+
+/* Toggle button */
+.shariah-toggle-btn {
+  padding: 4px 12px;
+  border-radius: 4px;
+  border: 1px solid var(--border-color, #30363d);
+  background: var(--card-bg, #21262d);
+  color: var(--text-primary, #c9d1d9);
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+.shariah-toggle-btn:hover {
+  background: var(--hover-bg, #30363d);
+}
+
+.shariah-toggle-btn.danger {
+  border-color: #f85149;
+  color: #f85149;
+}
+
+.shariah-toggle-btn.danger:hover {
+  background: rgba(248, 81, 73, 0.1);
+}
+
+.shariah-toggle-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Status row */
+.shariah-status-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.shariah-status-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.875rem;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: var(--bg-overlay, rgba(0, 0, 0, 0.2));
+}
+
+.shariah-status-item.ok {
+  color: #3fb950;
+}
+
+.shariah-status-item.warning {
+  color: #d29922;
+}
+
+.shariah-status-item.blocked {
+  color: #f85149;
+}
+
+/* Leverage gauge */
+.shariah-leverage {
+  margin-bottom: 12px;
+}
+
+.shariah-leverage-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.875rem;
+  color: var(--text-secondary, #8b949e);
+  margin-bottom: 6px;
+}
+
+.leverage-warning {
+  color: #f85149;
+}
+
+.shariah-leverage-bar {
+  height: 6px;
+  background: var(--bg-overlay, rgba(0, 0, 0, 0.3));
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.shariah-leverage-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.shariah-leverage-fill.safe {
+  background: linear-gradient(90deg, #238636, #3fb950);
+}
+
+.shariah-leverage-fill.warning {
+  background: linear-gradient(90deg, #9e6a03, #d29922);
+}
+
+.shariah-leverage-fill.danger {
+  background: linear-gradient(90deg, #da3633, #f85149);
+}
+
+/* Footer */
+.shariah-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.shariah-message {
+  font-size: 0.8125rem;
+  color: var(--text-muted, #8b949e);
+  flex: 1;
+}
+
+.shariah-close-btn {
+  padding: 4px 12px;
+  border-radius: 4px;
+  border: 1px solid #d29922;
+  background: transparent;
+  color: #d29922;
+  cursor: pointer;
+  font-size: 0.8125rem;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.shariah-close-btn:hover {
+  background: rgba(210, 153, 34, 0.1);
+}
+
+/* Time info */
+.shariah-time-info {
+  display: flex;
+  gap: 16px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-color, #30363d);
+  font-size: 0.75rem;
+  color: var(--text-muted, #8b949e);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .shariah-status-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .shariah-time-info {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .shariah-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .shariah-close-btn {
+    text-align: center;
+  }
+}

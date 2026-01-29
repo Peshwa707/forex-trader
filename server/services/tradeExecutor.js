@@ -1,17 +1,66 @@
 /**
  * Trade Executor Service for Server
  * Handles automated trade execution and management
+ *
+ * NOTE: This module now primarily delegates to ExecutionEngine.
+ * Direct functions are maintained for backward compatibility.
+ * For new code, prefer using executionEngine directly.
+ *
+ * Phase 1 Risk Improvements:
+ * - ATR-based trailing stops
+ * - Volatility-adjusted position sizing
+ * - Time-based exit checks
  */
 
 import * as db from '../database.js'
+import { executionEngine } from './execution/ExecutionEngine.js'
+import { trailingStopManager } from './risk/TrailingStopManager.js'
+import { positionSizer } from './risk/PositionSizer.js'
 
 /**
  * Calculate position size based on risk
+ * Phase 1: Now supports volatility-adjusted sizing
+ * Shariah compliance: Enforces max leverage limit when enabled
+ *
+ * @param {Object} settings - Trading settings
+ * @param {number} stopLossPips - Stop loss distance in pips
+ * @param {string} pair - Currency pair
+ * @param {number[]} priceHistory - Optional price history for volatility calc
  */
-export function calculatePositionSize(settings, stopLossPips, pair) {
+export function calculatePositionSize(settings, stopLossPips, pair, priceHistory = []) {
+  // Phase 1: Use volatility-adjusted position sizing if enabled
+  if (settings.useVolatilitySizing) {
+    const result = positionSizer.calculatePositionSize({
+      accountBalance: settings.accountBalance,
+      stopLossPips,
+      pair,
+      priceHistory,
+      settings
+    })
+
+    console.log(`[PositionSizer] ${result.method}: ${result.lots.toFixed(3)} lots (${result.riskPercent.toFixed(2)}% risk) - ${result.reason}`)
+
+    return result.lots
+  }
+
+  // Original fixed fractional calculation
   const riskAmount = settings.accountBalance * (settings.riskPerTrade / 100)
   const pipValuePerLot = pair.includes('JPY') ? 1000 : 10
-  const lots = riskAmount / (stopLossPips * pipValuePerLot)
+  let lots = riskAmount / (stopLossPips * pipValuePerLot)
+
+  // Shariah compliance: Enforce max leverage
+  if (settings.shariahCompliant) {
+    const maxLeverage = settings.shariahMaxLeverage || 5
+    const standardLotValue = 100000  // Standard forex lot = $100,000
+    const maxPositionValue = settings.accountBalance * maxLeverage
+    const maxLots = maxPositionValue / standardLotValue
+
+    if (lots > maxLots) {
+      console.log(`[Shariah] Reducing position from ${lots.toFixed(3)} to ${maxLots.toFixed(3)} lots (1:${maxLeverage} leverage limit)`)
+      lots = maxLots
+    }
+  }
+
   return Math.min(Math.max(0.01, parseFloat(lots.toFixed(2))), 1)
 }
 
@@ -116,8 +165,13 @@ export function executeTrade(prediction, settings) {
 
 /**
  * Update trade with current price
+ * Phase 1: Now supports ATR-based trailing stops
+ *
+ * @param {Object} trade - Trade object
+ * @param {number} currentPrice - Current market price
+ * @param {number[]} priceHistory - Optional price history for ATR calculation
  */
-export function updateTradePrice(trade, currentPrice) {
+export function updateTradePrice(trade, currentPrice, priceHistory = []) {
   const current = parseFloat(currentPrice)
   const entry = parseFloat(trade.entry_price)
   const pipValue = trade.pair.includes('JPY') ? 0.01 : 0.0001
@@ -134,11 +188,28 @@ export function updateTradePrice(trade, currentPrice) {
   const pipValuePerLot = trade.pair.includes('JPY') ? 1000 : 10
   const pnl = pnlPips * trade.position_size * pipValuePerLot
 
-  // Update trailing stop if enabled
+  // Update trailing stop
   const settings = db.getAllSettings()
   let trailingStop = trade.trailing_stop
+  let trailingReason = null
 
-  if (settings.useTrailingStop && pnlPips > settings.trailingStopPips) {
+  // Phase 1: Use advanced ATR-based trailing if enabled
+  if (settings.useAdvancedTrailing && settings.useTrailingStop) {
+    const trailingResult = trailingStopManager.calculateTrailingStop(trade, current, priceHistory)
+
+    if (trailingResult.newStop !== null) {
+      trailingStop = trailingResult.newStop
+      trailingReason = trailingResult.reason
+      console.log(`[TrailingStop] ${trade.pair}: ${trailingReason} → new stop: ${trailingStop.toFixed(5)}`)
+    } else if (trailingResult.activated === false) {
+      // Log why trailing not activated yet
+      if (pnlPips > 0) {
+        console.log(`[TrailingStop] ${trade.pair}: ${trailingResult.reason}`)
+      }
+    }
+  }
+  // Original fixed trailing stop logic
+  else if (settings.useTrailingStop && pnlPips > settings.trailingStopPips) {
     if (trade.direction === 'UP') {
       const newStop = current - (settings.trailingStopPips * pipValue)
       trailingStop = Math.max(parseFloat(trade.stop_loss), newStop)
@@ -146,6 +217,7 @@ export function updateTradePrice(trade, currentPrice) {
       const newStop = current + (settings.trailingStopPips * pipValue)
       trailingStop = Math.min(parseFloat(trade.stop_loss), newStop)
     }
+    trailingReason = `Fixed: ${settings.trailingStopPips} pips`
   }
 
   db.updateTrade(trade.id, {
@@ -155,7 +227,7 @@ export function updateTradePrice(trade, currentPrice) {
     trailingStop
   })
 
-  return { pnlPips, pnl, trailingStop }
+  return { pnlPips, pnl, trailingStop, trailingReason }
 }
 
 /**
@@ -281,16 +353,25 @@ export function updateAllTrades(currentPrices) {
 
 /**
  * Reset account
+ * NOTE: Delegates to ExecutionEngine. Only works in SIMULATION mode.
  */
 export function resetAccount(balance = 10000) {
-  // Close all trades first
-  const activeTrades = db.getActiveTrades()
-  activeTrades.forEach(trade => {
-    db.closeTrade(trade.id, trade.current_price || trade.entry_price, 'RESET', 0, 0)
-  })
+  // Try to use execution engine (handles mode checking)
+  try {
+    return executionEngine.resetAccount(balance)
+  } catch (error) {
+    // Fallback to direct reset if engine not initialized
+    const activeTrades = db.getActiveTrades()
+    activeTrades.forEach(trade => {
+      db.closeTrade(trade.id, trade.current_price || trade.entry_price, 'RESET', 0, 0)
+    })
 
-  db.saveSetting('accountBalance', balance)
-  db.logActivity('ACCOUNT_RESET', `Account reset to $${balance}`)
+    db.saveSetting('accountBalance', balance)
+    db.logActivity('ACCOUNT_RESET', `Account reset to $${balance}`)
 
-  return db.getAllSettings()
+    return db.getAllSettings()
+  }
 }
+
+// Re-export execution engine for direct access
+export { executionEngine }

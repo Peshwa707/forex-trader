@@ -1,36 +1,48 @@
-import { useState, useEffect, useRef } from 'react'
-import { Bot, Play, Pause, TrendingUp, TrendingDown, Target, Activity, RefreshCw, Trash2, Download, Settings, Zap, X, DollarSign, Clock, Shield, Wifi, WifiOff } from 'lucide-react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { Bot, Play, Pause, TrendingUp, TrendingDown, Target, Activity, RefreshCw, Trash2, Download, Settings, Zap, X, DollarSign, Clock, Shield, Wifi, WifiOff, AlertTriangle, Link, Unlink, Brain } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts'
-import { botApi, tradesApi, settingsApi, statsApi, accountApi, pricesApi, isApiAvailable } from '../services/api'
+import { botApi, tradesApi, settingsApi, statsApi, accountApi, isApiAvailable, ibApi, modeApi, riskApi, mlApi, shariahApi } from '../services/api'
 import { suggestPositionSize } from '../services/autoTrader'
+import RiskDashboard from '../components/RiskDashboard'
+import { TradeExplanationList } from '../components/TradeExplanation'
+import ShariahStatusWidget from '../components/ShariahStatusWidget'
+import Phase3AnalysisWidget from '../components/Phase3AnalysisWidget'
+import MLStatusWidget from '../components/MLStatusWidget'
 import './Bot.css'
 
 export default function BotPage() {
   const [isRunning, setIsRunning] = useState(false)
-  const [suggestions, setSuggestions] = useState([])
+  const [suggestions] = useState([])
   const [performance, setPerformance] = useState(null)
   const [logs, setLogs] = useState([])
   const [activeTab, setActiveTab] = useState('active')
   const [loading, setLoading] = useState(false)
   const [lastUpdate, setLastUpdate] = useState(null)
   const intervalRef = useRef(null)
+  const isBotCycleRunning = useRef(false) // Prevent race conditions on double-click
 
   // Auto-trading state
   const [autoSettings, setAutoSettings] = useState({})
   const [activeTrades, setActiveTrades] = useState([])
   const [tradingStats, setTradingStats] = useState(null)
   const [showSettings, setShowSettings] = useState(false)
-  const [currentPrices, setCurrentPrices] = useState({})
   const [apiConnected, setApiConnected] = useState(true)
 
-  useEffect(() => {
-    checkApiAndLoad()
-    // Auto-refresh every 30 seconds
-    intervalRef.current = setInterval(loadData, 30000)
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current)
-    }
-  }, [])
+  // IB integration state
+  const [ibStatus, setIbStatus] = useState(null)
+  const [tradingMode, setTradingMode] = useState('SIMULATION')
+  const [ibAccount, setIbAccount] = useState(null)
+  const [riskStatus, setRiskStatus] = useState(null)
+
+  // Phase A: Trust Foundation - Risk Dashboard & Trade Explanations
+  const [riskDashboard, setRiskDashboard] = useState(null)
+  const [tradeExplanations, setTradeExplanations] = useState([])
+
+  // Phase B: ML Status
+  const [mlStatus, setMlStatus] = useState(null)
+
+  // Shariah Compliance Status
+  const [shariahStatus, setShariahStatus] = useState(null)
 
   const checkApiAndLoad = async () => {
     const connected = await isApiAvailable()
@@ -40,6 +52,16 @@ export default function BotPage() {
       loadBotStatus()
     }
   }
+
+  useEffect(() => {
+    checkApiAndLoad()
+    // Auto-refresh every 30 seconds
+    intervalRef.current = setInterval(loadData, 30000)
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const loadBotStatus = async () => {
     try {
@@ -55,12 +77,35 @@ export default function BotPage() {
 
   const loadData = async () => {
     try {
-      const [trades, stats, settings, predictions, prices] = await Promise.all([
+      const [trades, stats, settings, predictions, ibStatusData, modeData, riskData, riskDashboardData, explanationsData, mlStatusData] = await Promise.all([
         tradesApi.getActive(),
         statsApi.get(),
         settingsApi.get(),
         statsApi.getPredictions(50),
-        pricesApi.getLive()
+        ibApi.getStatus().catch((err) => {
+          console.warn('IB status fetch failed:', err.message)
+          return null
+        }),
+        modeApi.get().catch((err) => {
+          console.warn('Mode fetch failed, using SIMULATION:', err.message)
+          return { mode: 'SIMULATION' }
+        }),
+        riskApi.getStatus().catch((err) => {
+          console.warn('Risk status fetch failed:', err.message)
+          return null
+        }),
+        riskApi.getDashboard().catch((err) => {
+          console.warn('Risk dashboard fetch failed:', err.message)
+          return null
+        }),
+        statsApi.getExplanations(10).catch((err) => {
+          console.warn('Explanations fetch failed:', err.message)
+          return []
+        }),
+        mlApi.getStatus().catch((err) => {
+          console.warn('ML status fetch failed:', err.message)
+          return null
+        })
       ])
 
       setActiveTrades(trades)
@@ -68,11 +113,18 @@ export default function BotPage() {
       setAutoSettings(settings)
       setLogs(predictions)
       setPerformance(stats)
+      setIbStatus(ibStatusData)
+      setTradingMode(modeData?.mode || 'SIMULATION')
+      setRiskStatus(riskData)
+      setRiskDashboard(riskDashboardData)
+      setTradeExplanations(explanationsData)
+      setMlStatus(mlStatusData)
 
-      // Build price map
-      const priceMap = {}
-      prices.forEach(p => { priceMap[p.pair] = p.rate })
-      setCurrentPrices(priceMap)
+      // Load IB account if connected
+      if (ibStatusData?.isConnected) {
+        const accountData = await ibApi.getAccountStatus().catch(() => null)
+        setIbAccount(accountData)
+      }
 
       setLastUpdate(new Date())
     } catch (error) {
@@ -81,7 +133,14 @@ export default function BotPage() {
     }
   }
 
-  const runBot = async () => {
+  const runBot = useCallback(async () => {
+    // Prevent race condition from double-clicks
+    if (isBotCycleRunning.current) {
+      console.log('Bot cycle already running, skipping duplicate request')
+      return
+    }
+
+    isBotCycleRunning.current = true
     setLoading(true)
     try {
       // Trigger a bot cycle on the server
@@ -91,8 +150,9 @@ export default function BotPage() {
       console.error('Failed to run bot cycle:', error)
     } finally {
       setLoading(false)
+      isBotCycleRunning.current = false
     }
-  }
+  }, [])
 
   const toggleBot = async () => {
     try {
@@ -124,13 +184,15 @@ export default function BotPage() {
       a.href = url
       a.download = `forex-bot-export-${new Date().toISOString().split('T')[0]}.json`
       a.click()
+      // Revoke object URL to prevent memory leak
+      setTimeout(() => URL.revokeObjectURL(url), 1000)
     } catch (error) {
       console.error('Export failed:', error)
     }
   }
 
   // Trade execution handlers
-  const handleExecuteTrade = async (suggestion) => {
+  const handleExecuteTrade = async () => {
     // Server handles execution automatically via bot cycle
     alert('Trades are executed automatically by the server based on ML predictions')
   }
@@ -186,18 +248,63 @@ export default function BotPage() {
     }
   }
 
+  // IB connection handlers
+  const handleConnectIB = async () => {
+    try {
+      await ibApi.connect()
+      await loadData()
+    } catch (error) {
+      alert(`Failed to connect to IB: ${error.message}`)
+    }
+  }
+
+  const handleDisconnectIB = async () => {
+    try {
+      await ibApi.disconnect()
+      await loadData()
+    } catch (error) {
+      alert(`Failed to disconnect from IB: ${error.message}`)
+    }
+  }
+
+  const handleModeChange = async (newMode) => {
+    try {
+      await modeApi.set(newMode)
+      setTradingMode(newMode)
+      await loadData()
+    } catch (error) {
+      alert(`Failed to change mode: ${error.message}`)
+    }
+  }
+
+  const handleKillSwitch = async () => {
+    if (confirm('EMERGENCY STOP: This will stop the bot and optionally close all trades. Continue?')) {
+      const closeAll = confirm('Also close all open trades?')
+      try {
+        await modeApi.killswitch(closeAll)
+        setIsRunning(false)
+        await loadData()
+        alert('Kill switch activated')
+      } catch (error) {
+        alert(`Kill switch failed: ${error.message}`)
+      }
+    }
+  }
+
   // Prepare accuracy chart data from logs
   const accuracyData = []
-  const logsForChart = logs.filter(l => l.outcome !== null)
+  // Filter for resolved predictions with valid correct field
+  const logsForChart = logs.filter(l => l.outcome !== null && l.correct !== null && l.correct !== undefined)
   let runningCorrect = 0
   let runningTotal = 0
 
   logsForChart.slice(-100).forEach((log, idx) => {
     runningTotal++
-    if (log.correct) runningCorrect++
+    // Explicitly check for true to handle null/undefined correctly
+    if (log.correct === true) runningCorrect++
     accuracyData.push({
       idx,
-      accuracy: ((runningCorrect / runningTotal) * 100).toFixed(1),
+      accuracy: runningTotal > 0 ? ((runningCorrect / runningTotal) * 100).toFixed(1) : '0.0',
       pips: parseFloat(log.pnl_pips || log.pnlPips || 0)
     })
   })
@@ -241,6 +348,50 @@ export default function BotPage() {
         </div>
       </header>
 
+      {/* IB Connection & Mode Bar */}
+      <div className="ib-bar">
+        <div className="ib-connection">
+          <span className={`ib-status ${ibStatus?.isConnected ? 'connected' : 'disconnected'}`}>
+            {ibStatus?.isConnected ? <Link size={16} /> : <Unlink size={16} />}
+            IB: {ibStatus?.isConnected ? 'Connected' : 'Disconnected'}
+          </span>
+          {ibStatus?.isConnected ? (
+            <button className="btn btn-sm btn-outline" onClick={handleDisconnectIB}>
+              Disconnect
+            </button>
+          ) : (
+            <button className="btn btn-sm btn-primary" onClick={handleConnectIB}>
+              Connect
+            </button>
+          )}
+        </div>
+
+        <div className="mode-selector">
+          <span className="mode-label">Mode:</span>
+          <select
+            value={tradingMode}
+            onChange={(e) => handleModeChange(e.target.value)}
+            className={`mode-select ${tradingMode.toLowerCase()}`}
+          >
+            <option value="SIMULATION">SIMULATION</option>
+            <option value="PAPER" disabled={!ibStatus?.isConnected}>PAPER</option>
+            <option value="LIVE" disabled={!ibStatus?.isConnected}>LIVE</option>
+          </select>
+        </div>
+
+        {ibAccount && (
+          <div className="ib-account-info">
+            <span className="account-id">{ibAccount.accountId}</span>
+            <span className="net-liq">${parseFloat(ibAccount.summary?.NetLiquidation || 0).toLocaleString()}</span>
+          </div>
+        )}
+
+        <button className="btn btn-sm btn-danger kill-switch" onClick={handleKillSwitch}>
+          <AlertTriangle size={14} />
+          KILL
+        </button>
+      </div>
+
       {/* Account Balance Bar */}
       {tradingStats && (
         <div className="balance-bar">
@@ -263,6 +414,37 @@ export default function BotPage() {
           </button>
         </div>
       )}
+
+      {/* Shariah Compliance Widget */}
+      <ShariahStatusWidget onStatusChange={setShariahStatus} />
+
+      {/* Phase B: ML Status Widget */}
+      <MLStatusWidget onStatusChange={setMlStatus} />
+
+      {/* Phase 3: Advanced Analysis Widget */}
+      <Phase3AnalysisWidget />
+
+      {/* Phase A: Trust Foundation - Risk Dashboard */}
+      <RiskDashboard
+        riskStatus={riskDashboard}
+        onKillSwitch={handleKillSwitch}
+      />
+
+      {/* Phase A: Trust Foundation - Trade Explanations */}
+      <div className="explanations-panel">
+        <div className="explanations-panel-header">
+          <div className="explanations-panel-title">
+            <Activity size={16} />
+            <span>Recent Decisions</span>
+          </div>
+          <div className="header-links">
+            <a href="/analytics" className="view-analytics-link">Analytics</a>
+            <span className="link-separator">|</span>
+            <a href="/backtest" className="view-analytics-link">Backtest</a>
+          </div>
+        </div>
+        <TradeExplanationList explanations={tradeExplanations} maxItems={5} />
+      </div>
 
       {/* Status Bar */}
       <div className="status-bar">
@@ -439,50 +621,54 @@ export default function BotPage() {
             <h3>Detailed Statistics</h3>
             <div className="stats-grid">
               <div className="stat-row">
-                <span>Total Predictions</span>
-                <span>{performance.totalPredictions}</span>
+                <span>Total Trades</span>
+                <span>{performance.totalTrades}</span>
               </div>
               <div className="stat-row">
-                <span>Resolved</span>
-                <span>{performance.resolvedPredictions}</span>
+                <span>Winning Trades</span>
+                <span className="profit">{performance.winningTrades}</span>
               </div>
               <div className="stat-row">
-                <span>Correct</span>
-                <span className="profit">{performance.correctPredictions}</span>
+                <span>Losing Trades</span>
+                <span className="loss">{performance.losingTrades}</span>
               </div>
               <div className="stat-row">
-                <span>Recent Accuracy (50)</span>
-                <span className={parseFloat(performance.recentAccuracy) >= 50 ? 'profit' : 'loss'}>
-                  {performance.recentAccuracy}%
+                <span>Win Rate</span>
+                <span className={parseFloat(performance.winRate) >= 50 ? 'profit' : 'loss'}>
+                  {performance.winRate}%
                 </span>
               </div>
               <div className="stat-row">
                 <span>Avg Win</span>
-                <span className="profit">+{performance.avgWinPips} pips</span>
+                <span className="profit">+{performance.avgWin} pips</span>
               </div>
               <div className="stat-row">
                 <span>Avg Loss</span>
-                <span className="loss">-{performance.avgLossPips} pips</span>
+                <span className="loss">-{performance.avgLoss} pips</span>
               </div>
               <div className="stat-row">
-                <span>Max Win Streak</span>
-                <span className="profit">{performance.maxWinStreak}</span>
+                <span>Total P/L</span>
+                <span className={parseFloat(performance.totalPnl) >= 0 ? 'profit' : 'loss'}>
+                  {parseFloat(performance.totalPnl) >= 0 ? '+' : ''}${performance.totalPnl}
+                </span>
               </div>
               <div className="stat-row">
-                <span>Max Lose Streak</span>
-                <span className="loss">{performance.maxLoseStreak}</span>
+                <span>Total Pips</span>
+                <span className={parseFloat(performance.totalPips) >= 0 ? 'profit' : 'loss'}>
+                  {parseFloat(performance.totalPips) >= 0 ? '+' : ''}{performance.totalPips}
+                </span>
               </div>
               <div className="stat-row">
-                <span>Current Streak</span>
-                <span className={performance.currentStreak >= 0 ? 'profit' : 'loss'}>
-                  {performance.currentStreak >= 0 ? '+' : ''}{performance.currentStreak}
+                <span>Profit Factor</span>
+                <span className={parseFloat(performance.profitFactor) >= 1 ? 'profit' : 'loss'}>
+                  {performance.profitFactor}
                 </span>
               </div>
             </div>
           </div>
 
           {/* By Pair Performance */}
-          {Object.keys(performance.byPair).length > 0 && (
+          {performance.byPair && Object.keys(performance.byPair).length > 0 && (
             <div className="pair-stats card">
               <h3>Performance by Pair</h3>
               {Object.entries(performance.byPair).map(([pair, stats]) => (
@@ -840,3 +1026,5 @@ function SettingsModal({ settings, onUpdate, onClose, onReset }) {
     </div>
   )
 }
+
+// MLStatusWidget is now imported from ../components/MLStatusWidget

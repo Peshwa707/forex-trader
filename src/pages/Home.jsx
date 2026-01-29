@@ -11,14 +11,6 @@ export default function Home() {
   const [stats, setStats] = useState({ totalTrades: 0, winRate: 0, totalPnL: 0 })
   const [predictions, setPredictions] = useState([])
 
-  useEffect(() => {
-    loadRates()
-    loadStats()
-    loadPredictions()
-    const interval = setInterval(loadRates, 30000) // Refresh every 30 seconds
-    return () => clearInterval(interval)
-  }, [])
-
   const loadPredictions = async () => {
     const topPairs = ['EUR/USD', 'GBP/USD', 'USD/JPY']
     const basePrices = { 'EUR/USD': 1.0850, 'GBP/USD': 1.2700, 'USD/JPY': 149.50 }
@@ -49,6 +41,14 @@ export default function Home() {
       totalPnL
     })
   }
+
+  useEffect(() => {
+    loadRates()
+    loadStats()
+    loadPredictions()
+    const interval = setInterval(loadRates, 30000) // Refresh every 30 seconds
+    return () => clearInterval(interval)
+  }, [])
 
   const alerts = JSON.parse(localStorage.getItem('forex_alerts') || '[]')
   const activeAlerts = alerts.filter(a => a.active).length

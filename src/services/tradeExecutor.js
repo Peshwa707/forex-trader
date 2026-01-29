@@ -10,7 +10,7 @@ const AUTO_SETTINGS_KEY = 'forex_auto_settings'
 // Default auto-trading settings
 const DEFAULT_SETTINGS = {
   enabled: false,
-  maxOpenTrades: 3,
+  maxOpenTrades: 6,
   riskPerTrade: 1, // Percentage of balance
   accountBalance: 10000,
   minConfidence: 60,
@@ -62,7 +62,6 @@ function saveTradeHistory(history) {
 // Calculate position size based on risk
 export function calculatePositionSize(settings, stopLossPips, pair) {
   const riskAmount = settings.accountBalance * (settings.riskPerTrade / 100)
-  const pipValue = pair.includes('JPY') ? 0.01 : 0.0001
 
   // For simplicity: 1 standard lot = $10 per pip for most pairs
   const pipValuePerLot = pair.includes('JPY') ? 1000 : 10

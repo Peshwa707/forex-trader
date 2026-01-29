@@ -60,12 +60,21 @@ export function calculateMACD(data, fastPeriod = 12, slowPeriod = 26, signalPeri
   const fastEMA = calculateEMA(data, fastPeriod)
   const slowEMA = calculateEMA(data, slowPeriod)
 
-  // Align arrays
+  // Align arrays - ensure we don't access out of bounds
   const offset = slowPeriod - fastPeriod
   const macdLine = []
 
   for (let i = 0; i < slowEMA.length; i++) {
-    macdLine.push(fastEMA[i + offset] - slowEMA[i])
+    const fastIdx = i + offset
+    // Bounds check to prevent undefined access
+    if (fastIdx >= 0 && fastIdx < fastEMA.length) {
+      macdLine.push(fastEMA[fastIdx] - slowEMA[i])
+    }
+  }
+
+  // Return empty result if insufficient data
+  if (macdLine.length === 0) {
+    return { macd: [], signal: [], histogram: [] }
   }
 
   const signalLine = calculateEMA(macdLine, signalPeriod)
@@ -73,7 +82,11 @@ export function calculateMACD(data, fastPeriod = 12, slowPeriod = 26, signalPeri
 
   const signalOffset = signalPeriod - 1
   for (let i = 0; i < signalLine.length; i++) {
-    histogram.push(macdLine[i + signalOffset] - signalLine[i])
+    const macdIdx = i + signalOffset
+    // Bounds check to prevent undefined access
+    if (macdIdx >= 0 && macdIdx < macdLine.length) {
+      histogram.push(macdLine[macdIdx] - signalLine[i])
+    }
   }
 
   return {

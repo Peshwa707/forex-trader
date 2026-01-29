@@ -82,6 +82,8 @@ export async function generateSwingPrediction(pair, priceHistory, dailyCandles) 
   if (!dailyCandles || dailyCandles.length < 30) {
     return {
       success: false,
+      pair,
+      confidence: 0,
       reason: 'Insufficient daily candle data for swing analysis'
     }
   }
@@ -90,7 +92,7 @@ export async function generateSwingPrediction(pair, priceHistory, dailyCandles) 
     // Get swing services
     const swingModule = await getSwingServices()
     if (!swingModule) {
-      return { success: false, reason: 'Swing services not available' }
+      return { success: false, pair, confidence: 0, reason: 'Swing services not available' }
     }
 
     const { swingStrategyEngine, swingExitManager, swingPointDetector, fibonacciAnalyzer } = swingModule
@@ -111,6 +113,8 @@ export async function generateSwingPrediction(pair, priceHistory, dailyCandles) 
       return {
         success: false,
         isSwing: true,
+        pair,
+        confidence: swingAnalysis.confidence || 0,
         reason: swingAnalysis.reasoning?.join('; ') || 'No swing setup found',
         analysis: swingAnalysis
       }
@@ -207,6 +211,8 @@ export async function generateSwingPrediction(pair, priceHistory, dailyCandles) 
     return {
       success: false,
       isSwing: true,
+      pair,
+      confidence: 0,
       reason: error.message
     }
   }

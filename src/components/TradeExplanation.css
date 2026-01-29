@@ -1,0 +1,209 @@
+/**
+ * TradeExplanation Styles
+ * Part of Phase A: Trust Foundation
+ */
+
+.trade-explanation {
+  padding: 0.75rem;
+  background: rgba(48, 54, 61, 0.5);
+  border-radius: 8px;
+  border-left: 3px solid #30363d;
+  margin-bottom: 0.5rem;
+}
+
+.trade-explanation.executed-buy {
+  border-left-color: #3fb950;
+  background: rgba(63, 185, 80, 0.1);
+}
+
+.trade-explanation.executed-sell {
+  border-left-color: #f85149;
+  background: rgba(248, 81, 73, 0.1);
+}
+
+.trade-explanation.result-win {
+  border-left-color: #3fb950;
+  background: rgba(63, 185, 80, 0.15);
+}
+
+.trade-explanation.result-loss {
+  border-left-color: #f85149;
+  background: rgba(248, 81, 73, 0.15);
+}
+
+.trade-explanation.skipped {
+  border-left-color: #8b949e;
+  background: rgba(139, 148, 158, 0.1);
+}
+
+.trade-explanation.blocked {
+  border-left-color: #d29922;
+  background: rgba(210, 153, 34, 0.1);
+}
+
+.explanation-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.explanation-header .icon {
+  flex-shrink: 0;
+}
+
+.explanation-header .icon.buy {
+  color: #3fb950;
+}
+
+.explanation-header .icon.sell {
+  color: #f85149;
+}
+
+.explanation-header .icon.win {
+  color: #3fb950;
+}
+
+.explanation-header .icon.loss {
+  color: #f85149;
+}
+
+.explanation-header .icon.skipped {
+  color: #8b949e;
+}
+
+.explanation-header .icon.blocked {
+  color: #d29922;
+}
+
+.explanation-headline {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #e6edf3;
+  flex: 1;
+}
+
+.explanation-time {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.7rem;
+  color: #6e7681;
+}
+
+.explanation-reason {
+  font-size: 0.8rem;
+  color: #8b949e;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.explanation-details {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(48, 54, 61, 0.8);
+}
+
+.detail-item {
+  font-size: 0.7rem;
+  color: #6e7681;
+}
+
+.detail-item.confidence {
+  font-family: monospace;
+}
+
+.detail-indicators {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.35rem;
+}
+
+.indicator-tag {
+  font-size: 0.65rem;
+  padding: 0.15rem 0.4rem;
+  background: rgba(88, 166, 255, 0.15);
+  color: #58a6ff;
+  border-radius: 4px;
+}
+
+/* Explanation List */
+.trade-explanation-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.explanation-list-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: #8b949e;
+  text-align: center;
+}
+
+.explanation-list-empty p {
+  margin: 0.5rem 0 0.25rem;
+  font-weight: 500;
+}
+
+.explanation-list-empty span {
+  font-size: 0.8rem;
+  color: #6e7681;
+}
+
+/* Panel container */
+.explanations-panel {
+  background: rgba(33, 38, 45, 0.8);
+  border: 1px solid #30363d;
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.explanations-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(48, 54, 61, 0.8);
+}
+
+.explanations-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #e6edf3;
+}
+
+.explanations-panel-title svg {
+  color: #58a6ff;
+}
+
+.view-analytics-link {
+  font-size: 0.75rem;
+  color: #58a6ff;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.view-analytics-link:hover {
+  color: #79b8ff;
+  text-decoration: underline;
+}
+
+.header-links {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.link-separator {
+  color: #30363d;
+  font-size: 0.75rem;
+}

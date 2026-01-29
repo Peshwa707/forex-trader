@@ -17,26 +17,7 @@ export default function Signals() {
   const [targetPrice, setTargetPrice] = useState('')
   const [note, setNote] = useState('')
 
-  useEffect(() => {
-    loadRates()
-    const interval = setInterval(() => {
-      loadRates()
-      checkAlerts()
-    }, 30000)
-    return () => clearInterval(interval)
-  }, [])
-
-  useEffect(() => {
-    localStorage.setItem('forex_alerts', JSON.stringify(alerts))
-  }, [alerts])
-
-  const loadRates = async () => {
-    const data = await fetchLiveRates()
-    setRates(data)
-  }
-
-  const checkAlerts = () => {
-    const currentRates = rates
+  const checkAlerts = (currentRates) => {
     setAlerts(prev => prev.map(alert => {
       if (!alert.active || alert.triggered) return alert
 
@@ -64,6 +45,21 @@ export default function Signals() {
       return alert
     }))
   }
+
+  useEffect(() => {
+    const loadAndCheck = async () => {
+      const data = await fetchLiveRates()
+      setRates(data)
+      checkAlerts(data)
+    }
+    loadAndCheck()
+    const interval = setInterval(loadAndCheck, 30000)
+    return () => clearInterval(interval)
+  }, [])
+
+  useEffect(() => {
+    localStorage.setItem('forex_alerts', JSON.stringify(alerts))
+  }, [alerts])
 
   const handleCreateAlert = (e) => {
     e.preventDefault()

@@ -3,8 +3,8 @@
  * Generates trade suggestions with entry, SL, TP based on ML predictions
  */
 
-import { predict, analyzePair, generateHistoricalData } from './mlPrediction'
-import { calculateATR, calculateSupportResistance, calculateBollingerBands } from './technicalAnalysis'
+import { analyzePair, generateHistoricalData } from './mlPrediction'
+import { calculateATR, calculateBollingerBands } from './technicalAnalysis'
 import { logPrediction, saveSuggestedTrade, autoResolvePredictions, getAccuracyStats } from './predictionLogger'
 
 // Base prices for pairs
@@ -198,7 +198,17 @@ export function getTradingPerformance() {
     else grossLoss += Math.abs(pips)
   })
 
-  const profitFactor = grossLoss > 0 ? (grossProfit / grossLoss).toFixed(2) : grossProfit > 0 ? '∞' : '0'
+  // Handle division by zero and edge cases for profit factor
+  let profitFactor = 'N/A'
+  if (grossLoss > 0 && grossProfit >= 0) {
+    profitFactor = (grossProfit / grossLoss).toFixed(2)
+  } else if (grossProfit > 0 && grossLoss === 0) {
+    profitFactor = '∞'
+  } else if (grossProfit === 0 && grossLoss === 0) {
+    profitFactor = 'N/A' // No trades to calculate
+  } else {
+    profitFactor = '0.00'
+  }
 
   // Calculate streak
   let currentStreak = 0

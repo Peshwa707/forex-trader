@@ -1,0 +1,546 @@
+/**
+ * Backtest Page Styles
+ * Part of Phase A: Trust Foundation
+ */
+
+.backtest-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+/* Header */
+.backtest-header {
+  margin-bottom: 1.5rem;
+}
+
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.header-title svg {
+  color: #58a6ff;
+}
+
+.header-title h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #e6edf3;
+  margin: 0;
+}
+
+.header-subtitle {
+  color: #8b949e;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+/* Config Section */
+.backtest-config {
+  background: rgba(33, 38, 45, 0.8);
+  border: 1px solid #30363d;
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.config-section {
+  margin-bottom: 1rem;
+}
+
+.config-section label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #8b949e;
+  margin-bottom: 0.5rem;
+}
+
+.pair-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.pair-toggle {
+  padding: 0.5rem 1rem;
+  background: rgba(48, 54, 61, 0.8);
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  color: #8b949e;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pair-toggle:hover {
+  border-color: #58a6ff;
+  color: #e6edf3;
+}
+
+.pair-toggle.active {
+  background: rgba(88, 166, 255, 0.15);
+  border-color: #58a6ff;
+  color: #58a6ff;
+}
+
+.config-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.config-section input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: rgba(48, 54, 61, 0.8);
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  color: #e6edf3;
+  font-size: 0.9rem;
+}
+
+.config-section input:focus {
+  outline: none;
+  border-color: #58a6ff;
+}
+
+.run-backtest-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #238636 0%, #2ea043 100%);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.run-backtest-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(46, 160, 67, 0.4);
+}
+
+.run-backtest-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.run-backtest-btn .spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Error */
+.backtest-error {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: rgba(248, 81, 73, 0.1);
+  border: 1px solid rgba(248, 81, 73, 0.3);
+  border-radius: 8px;
+  color: #f85149;
+  margin-bottom: 1.5rem;
+}
+
+/* Results */
+.backtest-results {
+  background: rgba(33, 38, 45, 0.8);
+  border: 1px solid #30363d;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.results-tabs {
+  display: flex;
+  border-bottom: 1px solid #30363d;
+}
+
+.results-tabs .tab {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: #8b949e;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.results-tabs .tab:hover {
+  color: #e6edf3;
+  background: rgba(48, 54, 61, 0.5);
+}
+
+.results-tabs .tab.active {
+  color: #58a6ff;
+  border-bottom-color: #58a6ff;
+}
+
+/* Summary Tab */
+.results-summary {
+  padding: 1.25rem;
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.metric-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: rgba(48, 54, 61, 0.5);
+  border-radius: 8px;
+  border: 1px solid #30363d;
+}
+
+.metric-card svg {
+  color: #8b949e;
+  flex-shrink: 0;
+}
+
+.metric-card.positive svg {
+  color: #3fb950;
+}
+
+.metric-card.negative svg {
+  color: #f85149;
+}
+
+.metric-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.metric-value {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #e6edf3;
+  font-family: monospace;
+}
+
+.metric-value.positive {
+  color: #3fb950;
+}
+
+.metric-value.negative {
+  color: #f85149;
+}
+
+.metric-label {
+  font-size: 0.8rem;
+  color: #8b949e;
+  margin-top: 0.15rem;
+}
+
+.metric-detail {
+  font-size: 0.75rem;
+  color: #6e7681;
+}
+
+/* Balance Summary */
+.balance-summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 1rem;
+  background: rgba(48, 54, 61, 0.3);
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.balance-item {
+  text-align: center;
+}
+
+.balance-label {
+  display: block;
+  font-size: 0.75rem;
+  color: #8b949e;
+  margin-bottom: 0.25rem;
+}
+
+.balance-value {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #e6edf3;
+  font-family: monospace;
+}
+
+.balance-value.positive {
+  color: #3fb950;
+}
+
+.balance-value.negative {
+  color: #f85149;
+}
+
+.balance-arrow {
+  font-size: 1.5rem;
+  color: #6e7681;
+}
+
+/* Stats Section */
+.stats-section {
+  margin-bottom: 1.5rem;
+}
+
+.stats-section h3 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #e6edf3;
+  margin: 0 0 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(48, 54, 61, 0.8);
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 0.75rem;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  padding: 0.5rem;
+  background: rgba(48, 54, 61, 0.3);
+  border-radius: 6px;
+}
+
+.stat-label {
+  font-size: 0.7rem;
+  color: #8b949e;
+  margin-bottom: 0.15rem;
+}
+
+.stat-value {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #e6edf3;
+  font-family: monospace;
+}
+
+.stat-value.positive {
+  color: #3fb950;
+}
+
+.stat-value.negative {
+  color: #f85149;
+}
+
+/* Performance Context */
+.performance-context {
+  padding: 1rem;
+  background: rgba(88, 166, 255, 0.1);
+  border: 1px solid rgba(88, 166, 255, 0.2);
+  border-radius: 8px;
+}
+
+.performance-context p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #8b949e;
+  line-height: 1.5;
+}
+
+.performance-context strong {
+  color: #e6edf3;
+}
+
+/* Trades Tab */
+.trades-tab {
+  padding: 1rem;
+}
+
+.trade-log {
+  overflow-x: auto;
+}
+
+.trade-log table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.trade-log th,
+.trade-log td {
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(48, 54, 61, 0.5);
+}
+
+.trade-log th {
+  color: #8b949e;
+  font-weight: 500;
+  background: rgba(48, 54, 61, 0.3);
+}
+
+.trade-log td {
+  color: #e6edf3;
+}
+
+.trade-log tr.win td {
+  background: rgba(63, 185, 80, 0.05);
+}
+
+.trade-log tr.loss td {
+  background: rgba(248, 81, 73, 0.05);
+}
+
+.trade-log td.buy {
+  color: #3fb950;
+}
+
+.trade-log td.sell {
+  color: #f85149;
+}
+
+.trade-log td.positive {
+  color: #3fb950;
+}
+
+.trade-log td.negative {
+  color: #f85149;
+}
+
+.trade-log .pips {
+  display: block;
+  font-size: 0.7rem;
+  color: #6e7681;
+}
+
+.more-trades {
+  text-align: center;
+  color: #6e7681;
+  font-size: 0.8rem;
+  margin-top: 1rem;
+}
+
+/* Equity Tab */
+.equity-tab {
+  padding: 1rem;
+}
+
+.equity-chart {
+  margin-bottom: 0.75rem;
+}
+
+.chart-legend {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 0.5rem;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: #8b949e;
+}
+
+.legend-line {
+  width: 20px;
+  height: 2px;
+}
+
+.legend-line.equity {
+  background: #3fb950;
+}
+
+.legend-line.balance {
+  background: #58a6ff;
+  border: 1px dashed #58a6ff;
+  height: 0;
+}
+
+/* Placeholder */
+.backtest-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 2rem;
+  text-align: center;
+  background: rgba(33, 38, 45, 0.8);
+  border: 1px solid #30363d;
+  border-radius: 12px;
+}
+
+.backtest-placeholder svg {
+  color: #6e7681;
+  margin-bottom: 1rem;
+}
+
+.backtest-placeholder h3 {
+  font-size: 1.25rem;
+  color: #e6edf3;
+  margin: 0 0 0.5rem;
+}
+
+.backtest-placeholder p {
+  color: #8b949e;
+  max-width: 500px;
+  margin: 0 0 1.5rem;
+}
+
+.backtest-tips {
+  text-align: left;
+  padding-left: 1.5rem;
+  margin: 0;
+}
+
+.backtest-tips li {
+  color: #6e7681;
+  font-size: 0.85rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .backtest-page {
+    padding: 1rem;
+  }
+
+  .metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .balance-summary {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .balance-arrow {
+    transform: rotate(90deg);
+  }
+
+  .trade-log {
+    font-size: 0.75rem;
+  }
+}

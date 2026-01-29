@@ -1,0 +1,188 @@
+/**
+ * PatternCard Styles
+ * Part of Phase A: Trust Foundation
+ */
+
+.pattern-card {
+  padding: 1rem;
+  background: rgba(33, 38, 45, 0.8);
+  border: 1px solid #30363d;
+  border-radius: 12px;
+  margin-bottom: 0.75rem;
+  border-left: 4px solid #30363d;
+}
+
+.pattern-card.winning {
+  border-left-color: #3fb950;
+  background: rgba(63, 185, 80, 0.05);
+}
+
+.pattern-card.losing {
+  border-left-color: #f85149;
+  background: rgba(248, 81, 73, 0.05);
+}
+
+.pattern-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.pattern-icon {
+  flex-shrink: 0;
+  padding: 0.25rem;
+}
+
+.pattern-icon .icon.win {
+  color: #3fb950;
+}
+
+.pattern-icon .icon.loss {
+  color: #f85149;
+}
+
+.pattern-title {
+  flex: 1;
+}
+
+.pattern-type {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #6e7681;
+  margin-bottom: 0.15rem;
+  display: block;
+}
+
+.pattern-card.winning .pattern-type {
+  color: #3fb950;
+}
+
+.pattern-card.losing .pattern-type {
+  color: #f85149;
+}
+
+.pattern-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #e6edf3;
+  margin: 0;
+}
+
+.confidence-badge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: monospace;
+}
+
+.confidence-badge.positive {
+  background: rgba(63, 185, 80, 0.2);
+  color: #3fb950;
+}
+
+.confidence-badge.negative {
+  background: rgba(248, 81, 73, 0.2);
+  color: #f85149;
+}
+
+.pattern-description {
+  font-size: 0.8rem;
+  color: #8b949e;
+  margin: 0 0 0.75rem;
+  line-height: 1.4;
+}
+
+.pattern-stats {
+  display: flex;
+  gap: 1rem;
+  padding: 0.75rem;
+  background: rgba(48, 54, 61, 0.5);
+  border-radius: 8px;
+  margin-bottom: 0.75rem;
+}
+
+.pattern-stats .stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  flex: 1;
+}
+
+.pattern-stats .stat svg {
+  color: #6e7681;
+}
+
+.pattern-stats .stat-value {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #e6edf3;
+  font-family: monospace;
+}
+
+.pattern-stats .stat-value.positive {
+  color: #3fb950;
+}
+
+.pattern-stats .stat-value.negative {
+  color: #f85149;
+}
+
+.pattern-stats .stat-label {
+  font-size: 0.65rem;
+  color: #6e7681;
+  text-transform: uppercase;
+}
+
+.pattern-impact {
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(48, 54, 61, 0.8);
+}
+
+.impact-text {
+  font-size: 0.75rem;
+  font-style: italic;
+}
+
+.impact-text.positive {
+  color: #3fb950;
+}
+
+.impact-text.negative {
+  color: #f85149;
+}
+
+/* Pattern List */
+.pattern-card-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.pattern-list-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: #8b949e;
+  text-align: center;
+}
+
+.pattern-list-empty svg {
+  color: #6e7681;
+  margin-bottom: 0.5rem;
+}
+
+.pattern-list-empty p {
+  margin: 0 0 0.25rem;
+  font-weight: 500;
+}
+
+.pattern-list-empty span {
+  font-size: 0.8rem;
+  color: #6e7681;
+}

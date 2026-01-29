@@ -18,6 +18,7 @@ export const CURRENCY_PAIRS = [
 ]
 
 // Fallback rates in case API fails (approximate values)
+// IMPORTANT: These are static fallback values and may be stale
 const FALLBACK_RATES = {
   EUR: { USD: 1.0850, GBP: 0.8550, JPY: 162.50, CHF: 0.9450, AUD: 1.6350, CAD: 1.4750 },
   GBP: { USD: 1.2700, JPY: 190.00 },
@@ -27,6 +28,11 @@ const FALLBACK_RATES = {
   XAU: { USD: 2650.00 },
   XAG: { USD: 31.50 },
 }
+
+// Track last successful API fetch to detect staleness
+let lastSuccessfulFetch = null
+let usingFallback = false
+const STALENESS_WARNING_MS = 5 * 60 * 1000 // Warn if fallback used for > 5 minutes
 
 export async function fetchLiveRates() {
   try {
@@ -40,15 +46,42 @@ export async function fetchLiveRates() {
     const data = await response.json()
 
     if (data.success && data.quotes) {
+      lastSuccessfulFetch = Date.now()
+      usingFallback = false
       return processApiRates(data.quotes)
     }
 
     // If primary fails, try alternative free API
-    return await fetchFromFrankfurter()
+    const frankfurterRates = await fetchFromFrankfurter()
+    lastSuccessfulFetch = Date.now()
+    usingFallback = false
+    return frankfurterRates
   } catch (error) {
     console.warn('Using fallback rates:', error.message)
+
+    // Check staleness of fallback usage
+    if (lastSuccessfulFetch) {
+      const staleDuration = Date.now() - lastSuccessfulFetch
+      if (staleDuration > STALENESS_WARNING_MS) {
+        console.error(`WARNING: Using stale fallback rates! Last successful fetch was ${Math.round(staleDuration / 1000 / 60)} minutes ago`)
+      }
+    } else {
+      console.error('WARNING: Using hardcoded fallback rates - no live data has been fetched this session')
+    }
+
+    usingFallback = true
     return generateFallbackRates()
   }
+}
+
+// Check if currently using fallback rates
+export function isUsingFallbackRates() {
+  return usingFallback
+}
+
+// Get last successful fetch time
+export function getLastSuccessfulFetch() {
+  return lastSuccessfulFetch
 }
 
 async function fetchFromFrankfurter() {

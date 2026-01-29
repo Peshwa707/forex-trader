@@ -1,0 +1,345 @@
+/**
+ * Analytics Page Styles
+ * Part of Phase A: Trust Foundation
+ */
+
+.analytics-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+/* Header */
+.analytics-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #30363d;
+}
+
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.header-title svg {
+  color: #58a6ff;
+}
+
+.header-title h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #e6edf3;
+  margin: 0;
+}
+
+.header-meta {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.trades-analyzed {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  color: #8b949e;
+}
+
+.refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: rgba(88, 166, 255, 0.1);
+  border: 1px solid rgba(88, 166, 255, 0.3);
+  border-radius: 8px;
+  color: #58a6ff;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.refresh-btn:hover:not(:disabled) {
+  background: rgba(88, 166, 255, 0.2);
+}
+
+.refresh-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.refresh-btn .spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Loading and Error states */
+.analytics-loading,
+.analytics-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  color: #8b949e;
+  gap: 1rem;
+}
+
+.analytics-loading .spin {
+  animation: spin 1s linear infinite;
+  color: #58a6ff;
+}
+
+.analytics-error {
+  color: #f85149;
+}
+
+.analytics-error button {
+  padding: 0.5rem 1rem;
+  background: rgba(248, 81, 73, 0.1);
+  border: 1px solid rgba(248, 81, 73, 0.3);
+  border-radius: 6px;
+  color: #f85149;
+  cursor: pointer;
+}
+
+/* Tabs */
+.analytics-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid #30363d;
+  padding-bottom: 0;
+}
+
+.analytics-tabs .tab {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: #8b949e;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.analytics-tabs .tab:hover {
+  color: #e6edf3;
+}
+
+.analytics-tabs .tab.active {
+  color: #58a6ff;
+  border-bottom-color: #58a6ff;
+}
+
+.analytics-tabs .tab svg {
+  flex-shrink: 0;
+}
+
+/* Content */
+.analytics-content {
+  min-height: 400px;
+}
+
+/* Pattern Section */
+.pattern-section {
+  margin-bottom: 2rem;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.section-header .icon.positive {
+  color: #3fb950;
+}
+
+.section-header .icon.negative {
+  color: #f85149;
+}
+
+.section-header h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #e6edf3;
+  margin: 0;
+  flex: 1;
+}
+
+.pattern-count {
+  font-size: 0.75rem;
+  color: #8b949e;
+  background: rgba(48, 54, 61, 0.8);
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+}
+
+.section-description {
+  font-size: 0.85rem;
+  color: #8b949e;
+  margin: 0 0 1rem;
+  line-height: 1.5;
+}
+
+/* No patterns message */
+.no-patterns-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+  color: #8b949e;
+}
+
+.no-patterns-message svg {
+  color: #6e7681;
+  margin-bottom: 1rem;
+}
+
+.no-patterns-message h3 {
+  font-size: 1.25rem;
+  color: #e6edf3;
+  margin: 0 0 0.5rem;
+}
+
+.no-patterns-message p {
+  max-width: 400px;
+  line-height: 1.5;
+}
+
+/* Charts Grid */
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Insights */
+.time-insights,
+.indicator-insights {
+  background: rgba(33, 38, 45, 0.8);
+  border: 1px solid #30363d;
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.time-insights h4,
+.indicator-insights h4 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #e6edf3;
+  margin: 0 0 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(48, 54, 61, 0.8);
+}
+
+.insights-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.insights-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+  font-size: 0.85rem;
+  color: #8b949e;
+  border-bottom: 1px solid rgba(48, 54, 61, 0.5);
+}
+
+.insights-list li:last-child {
+  border-bottom: none;
+}
+
+.insights-list li svg {
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+
+.insights-list li.positive {
+  color: #3fb950;
+}
+
+.insights-list li.positive svg {
+  color: #3fb950;
+}
+
+.insights-list li.negative {
+  color: #f85149;
+}
+
+.insights-list li.negative svg {
+  color: #f85149;
+}
+
+.insights-list li strong {
+  color: #e6edf3;
+}
+
+.no-data {
+  color: #6e7681;
+  font-size: 0.85rem;
+  text-align: center;
+  padding: 1rem;
+}
+
+/* Footer */
+.analytics-footer {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid #30363d;
+}
+
+.analytics-footer p {
+  font-size: 0.8rem;
+  color: #6e7681;
+  text-align: center;
+  margin: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .analytics-page {
+    padding: 1rem;
+  }
+
+  .analytics-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .header-meta {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .analytics-tabs {
+    overflow-x: auto;
+  }
+
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
+}

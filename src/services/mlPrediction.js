@@ -4,43 +4,13 @@
  */
 
 import * as tf from '@tensorflow/tfjs'
-import { calculateRSI, calculateMACD, calculateSMA, calculateEMA, calculateBollingerBands } from './technicalAnalysis'
+import { calculateRSI, calculateMACD, calculateSMA, calculateBollingerBands } from './technicalAnalysis'
 
 // Model storage
 let model = null
 let isTraining = false
 let trainingProgress = 0
-
-// Normalize data to 0-1 range
-function normalizeData(data) {
-  const min = Math.min(...data)
-  const max = Math.max(...data)
-  const range = max - min || 1
-  return {
-    normalized: data.map(d => (d - min) / range),
-    min,
-    max,
-    range
-  }
-}
-
-// Denormalize predictions
-function denormalize(value, min, range) {
-  return value * range + min
-}
-
-// Create sequences for training
-function createSequences(data, sequenceLength = 30) {
-  const sequences = []
-  const targets = []
-
-  for (let i = sequenceLength; i < data.length; i++) {
-    sequences.push(data.slice(i - sequenceLength, i))
-    targets.push(data[i])
-  }
-
-  return { sequences, targets }
-}
+let trainingLock = null // Mutex-like lock to prevent concurrent training
 
 // Prepare features from price data
 function prepareFeatures(prices, sequenceLength = 30) {
@@ -53,7 +23,6 @@ function prepareFeatures(prices, sequenceLength = 30) {
   const macd = calculateMACD(prices)
   const sma20 = calculateSMA(prices, 20)
   const sma50 = calculateSMA(prices, 50)
-  const ema12 = calculateEMA(prices, 12)
   const bb = calculateBollingerBands(prices, 20)
 
   // Normalize price returns instead of absolute prices
@@ -135,18 +104,20 @@ function buildModel(inputShape) {
   return model
 }
 
-// Convert price movements to categories
-function categorizePriceMovement(returns, threshold = 0.001) {
-  return returns.map(r => {
-    if (r < -threshold) return [1, 0, 0] // DOWN
-    if (r > threshold) return [0, 0, 1] // UP
-    return [0, 1, 0] // NEUTRAL
-  })
-}
-
 // Train the model on historical data
 export async function trainModel(priceHistory, onProgress = () => {}) {
-  if (isTraining) {
+  // Use mutex-like lock to prevent concurrent training (race condition fix)
+  if (trainingLock) {
+    return { success: false, message: 'Training already in progress' }
+  }
+
+  // Create lock synchronously before any async operation
+  trainingLock = Date.now()
+  const ourLock = trainingLock
+
+  // Double-check pattern: verify we still hold the lock
+  await new Promise(resolve => setTimeout(resolve, 0))
+  if (trainingLock !== ourLock) {
     return { success: false, message: 'Training already in progress' }
   }
 
@@ -215,6 +186,7 @@ export async function trainModel(priceHistory, onProgress = () => {}) {
     yTensor.dispose()
 
     isTraining = false
+    trainingLock = null // Release lock
     return {
       success: true,
       message: 'Model trained successfully',
@@ -222,6 +194,7 @@ export async function trainModel(priceHistory, onProgress = () => {}) {
     }
   } catch (error) {
     isTraining = false
+    trainingLock = null // Release lock on error
     console.error('Training error:', error)
     return { success: false, message: error.message }
   }

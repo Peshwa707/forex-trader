@@ -844,3 +844,114 @@
     margin-top: var(--spacing-sm);
   }
 }
+
+/* IB Connection Bar */
+.ib-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.ib-connection {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.ib-status {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.ib-status.connected {
+  color: var(--color-profit);
+}
+
+.ib-status.disconnected {
+  color: var(--color-text-secondary);
+}
+
+.mode-selector {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-left: auto;
+}
+
+.mode-label {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
+.mode-select {
+  padding: 6px 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.mode-select.simulation {
+  border-color: var(--color-text-secondary);
+}
+
+.mode-select.paper {
+  border-color: var(--color-warning);
+  color: var(--color-warning);
+}
+
+.mode-select.live {
+  border-color: var(--color-loss);
+  color: var(--color-loss);
+}
+
+.ib-account-info {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.8rem;
+}
+
+.ib-account-info .account-id {
+  color: var(--color-text-secondary);
+}
+
+.ib-account-info .net-liq {
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.kill-switch {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  margin-left: var(--spacing-md);
+}
+
+@media (max-width: 768px) {
+  .ib-bar {
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+  }
+
+  .mode-selector {
+    margin-left: 0;
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .kill-switch {
+    margin-left: auto;
+  }
+}
+
+/* ML Status Widget styles moved to ../components/MLStatusWidget.css */

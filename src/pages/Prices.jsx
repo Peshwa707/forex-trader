@@ -8,16 +8,20 @@ export default function Prices() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [favorites, setFavorites] = useState(() => {
-    return JSON.parse(localStorage.getItem('forex_favorites') || '["EUR/USD", "GBP/USD", "USD/JPY"]')
+    const defaultFavorites = ['EUR/USD', 'GBP/USD', 'USD/JPY']
+    try {
+      const stored = localStorage.getItem('forex_favorites')
+      if (!stored) return defaultFavorites
+      const parsed = JSON.parse(stored)
+      // Validate that parsed data is an array
+      return Array.isArray(parsed) ? parsed : defaultFavorites
+    } catch (error) {
+      console.warn('Failed to parse favorites from localStorage:', error)
+      return defaultFavorites
+    }
   })
   const [filter, setFilter] = useState('all')
   const [lastUpdate, setLastUpdate] = useState(null)
-
-  useEffect(() => {
-    loadRates()
-    const interval = setInterval(loadRates, 30000)
-    return () => clearInterval(interval)
-  }, [])
 
   const loadRates = async () => {
     const data = await fetchLiveRates()
@@ -26,6 +30,12 @@ export default function Prices() {
     setRefreshing(false)
     setLastUpdate(new Date())
   }
+
+  useEffect(() => {
+    loadRates()
+    const interval = setInterval(loadRates, 30000)
+    return () => clearInterval(interval)
+  }, [])
 
   const handleRefresh = () => {
     setRefreshing(true)

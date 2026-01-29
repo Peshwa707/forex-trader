@@ -1,0 +1,131 @@
+/**
+ * WinRateChart Styles
+ * Part of Phase A: Trust Foundation
+ */
+
+.win-rate-chart {
+  background: rgba(33, 38, 45, 0.8);
+  border: 1px solid #30363d;
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.chart-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #e6edf3;
+  margin: 0 0 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(48, 54, 61, 0.8);
+}
+
+.chart-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.win-rate-bar {
+  display: grid;
+  grid-template-columns: 80px 1fr 100px;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.35rem 0;
+}
+
+.win-rate-bar.highlight {
+  background: rgba(88, 166, 255, 0.05);
+  margin: 0 -0.5rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+}
+
+.bar-label {
+  font-size: 0.75rem;
+  color: #8b949e;
+  font-weight: 500;
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bar-container {
+  height: 20px;
+  background: rgba(48, 54, 61, 0.5);
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.bar-value {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #e6edf3;
+  font-family: monospace;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.bar-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.1rem;
+}
+
+.trades-count {
+  font-size: 0.65rem;
+  color: #6e7681;
+}
+
+.avg-pnl {
+  font-size: 0.7rem;
+  font-weight: 600;
+  font-family: monospace;
+}
+
+.avg-pnl.positive {
+  color: #3fb950;
+}
+
+.avg-pnl.negative {
+  color: #f85149;
+}
+
+/* Empty state */
+.chart-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: #6e7681;
+  gap: 0.5rem;
+}
+
+.chart-empty span {
+  font-size: 0.8rem;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .win-rate-bar {
+    grid-template-columns: 60px 1fr 80px;
+    gap: 0.5rem;
+  }
+
+  .bar-label {
+    font-size: 0.7rem;
+  }
+}

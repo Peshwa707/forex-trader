@@ -1,7 +1,11 @@
 /**
  * Forex API Service for Server
- * Fetches live exchange rates
+ * Fetches live exchange rates from multiple sources
+ * Priority: IB (when connected) > External APIs > Cached > Simulated
  */
+
+import { ibMarketData } from './ib/IBMarketData.js'
+import { ibConnector } from './ib/IBConnector.js'
 
 const PAIRS = ['EUR/USD', 'GBP/USD', 'USD/JPY', 'AUD/USD', 'USD/CAD', 'EUR/GBP']
 const API_URL = 'https://api.exchangerate.host/latest'
@@ -11,7 +15,42 @@ let ratesCache = {}
 let lastFetch = 0
 const CACHE_DURATION = 30000 // 30 seconds
 
+// Price source tracking
+let lastSource = 'SIMULATED'
+
+/**
+ * Get the current price source
+ */
+export function getPriceSource() {
+  return lastSource
+}
+
+/**
+ * Fetch rates from IB if connected
+ */
+function fetchIBRates() {
+  if (!ibConnector.isConnected()) {
+    return null
+  }
+
+  const rates = ibMarketData.getRatesForBot()
+
+  // Only return if we have all pairs with recent data
+  if (rates.length >= PAIRS.length && ibMarketData.hasAllRecentData(PAIRS, 60000)) {
+    lastSource = 'IB'
+    return rates
+  }
+
+  return null
+}
+
 export async function fetchLiveRates() {
+  // Try IB first if connected
+  const ibRates = fetchIBRates()
+  if (ibRates && ibRates.length > 0) {
+    console.log('Using IB market data')
+    return ibRates
+  }
   const now = Date.now()
 
   // Return cached if fresh
@@ -28,6 +67,7 @@ export async function fetchLiveRates() {
       if (data.rates) {
         ratesCache = data.rates
         lastFetch = now
+        lastSource = 'API_PRIMARY'
         return formatRates(data.rates)
       }
     }
@@ -39,6 +79,7 @@ export async function fetchLiveRates() {
       if (backupData.rates) {
         ratesCache = backupData.rates
         lastFetch = now
+        lastSource = 'API_BACKUP'
         return formatRates(backupData.rates)
       }
     }
@@ -46,18 +87,22 @@ export async function fetchLiveRates() {
     // If all APIs fail, return cached or simulated data
     if (Object.keys(ratesCache).length > 0) {
       console.log('Using cached rates')
+      lastSource = 'CACHED'
       return formatRates(ratesCache)
     }
 
     console.log('Using simulated rates')
+    lastSource = 'SIMULATED'
     return getSimulatedRates()
   } catch (error) {
     console.error('Error fetching rates:', error.message)
 
     if (Object.keys(ratesCache).length > 0) {
+      lastSource = 'CACHED'
       return formatRates(ratesCache)
     }
 
+    lastSource = 'SIMULATED'
     return getSimulatedRates()
   }
 }

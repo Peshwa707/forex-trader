@@ -2,29 +2,19 @@ import { useState, useEffect } from 'react'
 import { Brain, TrendingUp, TrendingDown, Minus, RefreshCw, Activity, Target, BarChart3, Zap } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts'
 import { CURRENCY_PAIRS } from '../services/forexApi'
-import { trainModel, predict, analyzePair, generateHistoricalData, getModelStatus } from '../services/mlPrediction'
-import { calculateRSI, calculateMACD, calculateSMA, generateSignal } from '../services/technicalAnalysis'
+import { trainModel, analyzePair, generateHistoricalData, getModelStatus } from '../services/mlPrediction'
+import { calculateRSI } from '../services/technicalAnalysis'
 import './Analysis.css'
 
 export default function Analysis() {
   const [selectedPair, setSelectedPair] = useState('EUR/USD')
   const [analysis, setAnalysis] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null) // Track analysis errors
   const [priceHistory, setPriceHistory] = useState([])
   const [modelStatus, setModelStatus] = useState({ trained: false, isTraining: false, progress: 0 })
   const [trainingLogs, setTrainingLogs] = useState([])
   const [activeTab, setActiveTab] = useState('prediction')
-
-  useEffect(() => {
-    // Generate simulated historical data on mount
-    const history = generateHistoricalData(getBasePrice(selectedPair), 180)
-    setPriceHistory(history)
-    runAnalysis(history)
-  }, [selectedPair])
-
-  useEffect(() => {
-    setModelStatus(getModelStatus())
-  }, [])
 
   const getBasePrice = (pair) => {
     const basePrices = {
@@ -46,14 +36,29 @@ export default function Analysis() {
 
   const runAnalysis = async (history) => {
     setLoading(true)
+    setError(null) // Clear previous errors
     try {
       const result = await analyzePair(history, selectedPair)
       setAnalysis(result)
-    } catch (error) {
-      console.error('Analysis error:', error)
+    } catch (err) {
+      console.error('Analysis error:', err)
+      setError(err.message || 'Failed to analyze pair. Please try again.')
+      setAnalysis(null) // Clear stale analysis on error
     }
     setLoading(false)
   }
+
+  useEffect(() => {
+    // Generate simulated historical data on mount
+    const history = generateHistoricalData(getBasePrice(selectedPair), 180)
+    setPriceHistory(history)
+    runAnalysis(history)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPair])
+
+  useEffect(() => {
+    setModelStatus(getModelStatus())
+  }, [])
 
   const handleTrain = async () => {
     setTrainingLogs([])
@@ -129,6 +134,19 @@ export default function Analysis() {
           Train Model
         </button>
       </div>
+
+      {/* Error UI */}
+      {error && (
+        <div className="error-card card" style={{ backgroundColor: '#f85149', color: 'white', padding: '1rem', marginBottom: '1rem' }}>
+          <strong>Analysis Error:</strong> {error}
+          <button
+            onClick={handleRefresh}
+            style={{ marginLeft: '1rem', padding: '0.25rem 0.5rem', cursor: 'pointer' }}
+          >
+            Retry
+          </button>
+        </div>
+      )}
 
       {activeTab === 'prediction' && analysis && (
         <>
