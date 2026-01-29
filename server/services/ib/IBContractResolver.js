@@ -3,7 +3,7 @@
  * Resolves forex pairs to IB contract specifications
  */
 
-import { Forex } from '@stoqey/ib'
+import { Forex } from './ib-loader.js'
 import { IB_CONFIG } from '../../config/ib.config.js'
 
 /**

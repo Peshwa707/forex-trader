@@ -3,7 +3,7 @@
  * Streams real-time forex prices from IB
  */
 
-import { IBApiTickType } from '@stoqey/ib'
+import { IBApiTickType } from './ib-loader.js'
 import * as db from '../../database.js'
 import { ibConnector } from './IBConnector.js'
 import { createForexContract, contractToPair, getSupportedPairs, formatPrice } from './IBContractResolver.js'

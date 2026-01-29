@@ -3,7 +3,7 @@
  * Manages account information, positions, and P&L from IB
  */
 
-import { EventName } from '@stoqey/ib'
+import { EventName } from './ib-loader.js'
 import * as db from '../../database.js'
 import { ibConnector } from './IBConnector.js'
 import { contractToPair, unitsToLots } from './IBContractResolver.js'

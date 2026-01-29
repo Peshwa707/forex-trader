@@ -3,7 +3,7 @@
  * Manages IB Gateway/TWS connection lifecycle with auto-reconnect
  */
 
-import { IBApi, EventName } from '@stoqey/ib'
+import { IBApi, EventName, isIBAvailable } from './ib-loader.js'
 import * as db from '../../database.js'
 import { IB_CONFIG, validateMode } from '../../config/ib.config.js'
 import { errorHandler } from './IBErrorHandler.js'

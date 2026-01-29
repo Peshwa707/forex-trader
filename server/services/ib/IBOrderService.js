@@ -3,7 +3,7 @@
  * Handles order placement, modification, and cancellation via IB
  */
 
-import { OrderAction, OrderType, TimeInForce } from '@stoqey/ib'
+import { OrderAction, OrderType, TimeInForce } from './ib-loader.js'
 import * as db from '../../database.js'
 import { ibConnector } from './IBConnector.js'
 import { createForexContract, lotsToUnits, getPipValue, formatPrice } from './IBContractResolver.js'
